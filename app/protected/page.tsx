@@ -7,7 +7,7 @@ export default function ProtectedPage() {
         <h1 className="text-3xl font-semibold">MoveLib</h1>
 
         <p className="text-muted-foreground">
-          Manage your movement library and prepare lessons.
+          Gestisci la libreria degli esercizi e prepara le tue lezioni.
         </p>
       </div>
 
@@ -16,9 +16,9 @@ export default function ProtectedPage() {
           href="/protected/exercises"
           className="rounded-lg border p-6 transition-colors hover:bg-muted"
         >
-          <h2 className="font-semibold">Exercises</h2>
+          <h2 className="font-semibold">Esercizi</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Browse and manage the movement library.
+            Consulta e gestisci la libreria degli esercizi.
           </p>
         </Link>
 
@@ -26,9 +26,9 @@ export default function ProtectedPage() {
           href="/protected/lessons"
           className="rounded-lg border p-6 transition-colors hover:bg-muted"
         >
-          <h2 className="font-semibold">Lessons</h2>
+          <h2 className="font-semibold">Lezioni</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Prepare and organize lessons.
+            Prepara e organizza le tue lezioni.
           </p>
         </Link>
       </div>
