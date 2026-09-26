@@ -1,43 +1,37 @@
-import { redirect } from "next/navigation";
-
-import { createClient } from "@/lib/supabase/server";
-import { InfoIcon } from "lucide-react";
-import { FetchDataSteps } from "@/components/tutorial/fetch-data-steps";
-import { Suspense } from "react";
-
-async function UserDetails() {
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.getClaims();
-
-  if (error || !data?.claims) {
-    redirect("/auth/login");
-  }
-
-  return JSON.stringify(data.claims, null, 2);
-}
+import Link from "next/link";
 
 export default function ProtectedPage() {
   return (
-    <div className="flex-1 w-full flex flex-col gap-12">
-      <div className="w-full">
-        <div className="bg-accent text-sm p-3 px-5 rounded-md text-foreground flex gap-3 items-center">
-          <InfoIcon size="16" strokeWidth={2} />
-          This is a protected page that you can only see as an authenticated
-          user
-        </div>
+    <main className="w-full space-y-8">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-semibold">MoveLib</h1>
+
+        <p className="text-muted-foreground">
+          Manage your movement library and prepare lessons.
+        </p>
       </div>
-      <div className="flex flex-col gap-2 items-start">
-        <h2 className="font-bold text-2xl mb-4">Your user details</h2>
-        <pre className="text-xs font-mono p-3 rounded border max-h-32 overflow-auto">
-          <Suspense>
-            <UserDetails />
-          </Suspense>
-        </pre>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Link
+          href="/protected/exercises"
+          className="rounded-lg border p-6 transition-colors hover:bg-muted"
+        >
+          <h2 className="font-semibold">Exercises</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Browse and manage the movement library.
+          </p>
+        </Link>
+
+        <Link
+          href="/protected/lessons"
+          className="rounded-lg border p-6 transition-colors hover:bg-muted"
+        >
+          <h2 className="font-semibold">Lessons</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Prepare and organize lessons.
+          </p>
+        </Link>
       </div>
-      <div>
-        <h2 className="font-bold text-2xl mb-4">Next steps</h2>
-        <FetchDataSteps />
-      </div>
-    </div>
+    </main>
   );
 }
