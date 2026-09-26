@@ -12,14 +12,14 @@ export default function ConfirmPage() {
     async function acceptInvitation() {
       const supabase = createClient();
 
-      const hash = window.location.hash.substring(1);
-      const params = new URLSearchParams(hash);
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
 
-      const accessToken = params.get("access_token");
-      const refreshToken = params.get("refresh_token");
+      const accessToken = hashParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token");
+      const type = hashParams.get("type");
 
-      if (!accessToken || !refreshToken) {
-        setError("The invitation link does not contain a valid session.");
+      if (type !== "invite" || !accessToken || !refreshToken) {
+        setError("The invitation link is invalid or has expired.");
         return;
       }
 
@@ -33,6 +33,9 @@ export default function ConfirmPage() {
         return;
       }
 
+      // Remove the tokens from the visible browser URL immediately.
+      window.history.replaceState(null, "", "/auth/confirm");
+
       router.replace("/auth/update-password");
     }
 
@@ -45,13 +48,15 @@ export default function ConfirmPage() {
         {error ? (
           <>
             <h1 className="text-2xl font-semibold">
-              Sorry, something went wrong.
+              Invitation could not be accepted
             </h1>
+
             <p className="text-sm text-muted-foreground">{error}</p>
           </>
         ) : (
           <>
             <h1 className="text-2xl font-semibold">Accepting invitation...</h1>
+
             <p className="text-sm text-muted-foreground">
               Please wait while we finish setting up your account.
             </p>

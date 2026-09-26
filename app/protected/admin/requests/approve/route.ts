@@ -97,7 +97,7 @@ export async function POST(request: Request) {
       data: {
         display_name: registrationRequest.name,
       },
-      redirectTo: "http://localhost:3000/auth/confirm",
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm`,
     },
   );
 
