@@ -73,6 +73,4 @@ export async function ExerciseList() {
       initialFavouriteExerciseIds={favouriteExerciseIds}
     />
   );
-
-  return <ExerciseLibrary exercises={exercises as LibraryExercise[]} />;
 }
