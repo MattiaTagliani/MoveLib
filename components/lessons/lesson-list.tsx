@@ -1,6 +1,8 @@
-import { Button } from "@/components/ui/button";
+import {
+  LessonLibrary,
+  LibraryLesson,
+} from "@/components/lessons/lesson-library";
 import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
 
 export async function LessonList() {
   const supabase = await createClient();
@@ -37,28 +39,5 @@ export async function LessonList() {
     );
   }
 
-  return (
-    <div className="space-y-3">
-      {lessons.map((lesson) => (
-        <div
-          key={lesson.id}
-          className="flex items-center justify-between gap-4 rounded-lg border p-4"
-        >
-          <div>
-            <h2 className="font-semibold">{lesson.title}</h2>
-
-            <p className="mt-1 text-sm text-muted-foreground">
-              {lesson.lesson_exercises.length === 1
-                ? "1 esercizio"
-                : `${lesson.lesson_exercises.length} esercizi`}
-            </p>
-          </div>
-
-          <Button asChild>
-            <Link href={`/protected/lessons/${lesson.id}`}>Modifica</Link>
-          </Button>
-        </div>
-      ))}
-    </div>
-  );
+  return <LessonLibrary lessons={lessons as LibraryLesson[]} />;
 }
