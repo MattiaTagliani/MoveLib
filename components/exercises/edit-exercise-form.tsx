@@ -8,38 +8,89 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ExerciseTag, TagSelector } from "@/components/exercises/tag-selector";
 
-interface NewExerciseFormProps {
+interface ExerciseVariant {
+  id: string;
+  variant: string;
+}
+
+interface Exercise {
+  id: string;
+  name: string;
+  description: string | null;
+  min_age: number;
+  max_age: number;
+  exercise_variants: ExerciseVariant[];
+  exercise_tags: {
+    tag_id: string;
+  }[];
+}
+
+interface EditableVariant {
+  id: string | null;
+  variant: string;
+}
+
+interface EditExerciseFormProps {
+  exercise: Exercise;
   availableTags: ExerciseTag[];
 }
 
-export function NewExerciseForm({ availableTags }: NewExerciseFormProps) {
+export function EditExerciseForm({
+  exercise,
+  availableTags,
+}: EditExerciseFormProps) {
   const router = useRouter();
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [minAge, setMinAge] = useState("");
-  const [maxAge, setMaxAge] = useState("");
-  const [variants, setVariants] = useState<string[]>([]);
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [name, setName] = useState(exercise.name);
+  const [description, setDescription] = useState(exercise.description ?? "");
+  const [minAge, setMinAge] = useState(exercise.min_age.toString());
+  const [maxAge, setMaxAge] = useState(exercise.max_age.toString());
+
+  const [variants, setVariants] = useState<EditableVariant[]>(
+    exercise.exercise_variants.map((variant) => ({
+      id: variant.id,
+      variant: variant.variant,
+    })),
+  );
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
+    exercise.exercise_tags.map((exerciseTag) => exerciseTag.tag_id),
+  );
+
+  const [deletedVariantIds, setDeletedVariantIds] = useState<string[]>([]);
 
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   function addVariant() {
-    setVariants((currentVariants) => [...currentVariants, ""]);
-  }
-
-  function removeVariant(index: number) {
-    setVariants((currentVariants) =>
-      currentVariants.filter((_, variantIndex) => variantIndex !== index),
-    );
+    setVariants((currentVariants) => [
+      ...currentVariants,
+      {
+        id: null,
+        variant: "",
+      },
+    ]);
   }
 
   function updateVariant(index: number, value: string) {
     setVariants((currentVariants) =>
       currentVariants.map((variant, variantIndex) =>
-        variantIndex === index ? value : variant,
+        variantIndex === index ? { ...variant, variant: value } : variant,
       ),
+    );
+  }
+
+  function removeVariant(index: number) {
+    const variantToRemove = variants[index];
+
+    if (variantToRemove.id) {
+      setDeletedVariantIds((currentIds) => [
+        ...currentIds,
+        variantToRemove.id!,
+      ]);
+    }
+
+    setVariants((currentVariants) =>
+      currentVariants.filter((_, variantIndex) => variantIndex !== index),
     );
   }
 
@@ -61,62 +112,119 @@ export function NewExerciseForm({ availableTags }: NewExerciseFormProps) {
       return;
     }
 
+    if (!name.trim()) {
+      setError("Inserisci il nome dell'esercizio.");
+      return;
+    }
+
     setIsLoading(true);
 
     const supabase = createClient();
 
-    const { data: exercise, error: insertError } = await supabase
+    const { error: exerciseError } = await supabase
       .from("exercises")
-      .insert({
+      .update({
         name: name.trim(),
         description: description.trim() || null,
         min_age: parsedMinAge,
         max_age: parsedMaxAge,
+        updated_at: new Date().toISOString(),
       })
-      .select("id")
-      .single();
+      .eq("id", exercise.id);
 
-    if (insertError) {
-      setError(insertError.message);
+    if (exerciseError) {
+      setError(exerciseError.message);
       setIsLoading(false);
       return;
     }
 
-    const validVariants = variants
-      .map((variant) => variant.trim())
+    const existingVariants = variants.filter((variant) => variant.id !== null);
+
+    for (const variant of existingVariants) {
+      const trimmedVariant = variant.variant.trim();
+
+      if (!trimmedVariant) {
+        continue;
+      }
+
+      const { error: variantError } = await supabase
+        .from("exercise_variants")
+        .update({
+          variant: trimmedVariant,
+        })
+        .eq("id", variant.id!);
+
+      if (variantError) {
+        setError(variantError.message);
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    const newVariants = variants
+      .filter((variant) => variant.id === null)
+      .map((variant) => variant.variant.trim())
       .filter((variant) => variant.length > 0);
 
-    if (validVariants.length > 0) {
-      const { error: variantsError } = await supabase
+    if (newVariants.length > 0) {
+      const { error: newVariantsError } = await supabase
         .from("exercise_variants")
         .insert(
-          validVariants.map((variant) => ({
+          newVariants.map((variant) => ({
             exercise_id: exercise.id,
             variant,
           })),
         );
 
-      if (variantsError) {
-        setError(variantsError.message);
+      if (newVariantsError) {
+        setError(newVariantsError.message);
         setIsLoading(false);
         return;
       }
+    }
+
+    if (deletedVariantIds.length > 0) {
+      const { error: deleteVariantsError } = await supabase
+        .from("exercise_variants")
+        .delete()
+        .in("id", deletedVariantIds);
+
+      if (deleteVariantsError) {
+        setError(deleteVariantsError.message);
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    const { error: removeTagsError } = await supabase
+      .from("exercise_tags")
+      .delete()
+      .eq("exercise_id", exercise.id);
+
+    if (removeTagsError) {
+      setError(removeTagsError.message);
+      setIsLoading(false);
+      return;
     }
 
     if (selectedTagIds.length > 0) {
-      const { error: tagsError } = await supabase.from("exercise_tags").insert(
-        selectedTagIds.map((tagId) => ({
-          exercise_id: exercise.id,
-          tag_id: tagId,
-        })),
-      );
+      const { error: addTagsError } = await supabase
+        .from("exercise_tags")
+        .insert(
+          selectedTagIds.map((tagId) => ({
+            exercise_id: exercise.id,
+            tag_id: tagId,
+          })),
+        );
 
-      if (tagsError) {
-        setError(tagsError.message);
+      if (addTagsError) {
+        setError(addTagsError.message);
         setIsLoading(false);
         return;
       }
     }
+
+    setIsLoading(false);
 
     router.push("/protected/exercises");
     router.refresh();
@@ -180,14 +288,14 @@ export function NewExerciseForm({ availableTags }: NewExerciseFormProps) {
           <Label>Varianti</Label>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            Aggiungi eventuali varianti dell'esercizio.
+            Aggiungi, modifica o rimuovi le varianti dell'esercizio.
           </p>
         </div>
 
         {variants.map((variant, index) => (
-          <div key={index} className="flex gap-2">
+          <div key={variant.id ?? `new-${index}`} className="flex gap-2">
             <Input
-              value={variant}
+              value={variant.variant}
               onChange={(e) => updateVariant(index, e.target.value)}
               placeholder="Descrivi la variante"
             />
@@ -227,11 +335,15 @@ export function NewExerciseForm({ availableTags }: NewExerciseFormProps) {
 
       <div className="flex gap-3">
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Salvataggio..." : "Salva esercizio"}
+          {isLoading ? "Salvataggio..." : "Salva modifiche"}
         </Button>
 
-        <Button type="button" variant="outline" asChild>
-          <a href="/protected/exercises">Annulla</a>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push("/protected/exercises")}
+        >
+          Annulla
         </Button>
       </div>
     </form>

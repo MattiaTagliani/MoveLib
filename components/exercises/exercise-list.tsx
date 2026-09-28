@@ -1,3 +1,7 @@
+import {
+  ExerciseLibrary,
+  LibraryExercise,
+} from "@/components/exercises/exercise-library";
 import { createClient } from "@/lib/supabase/server";
 
 export async function ExerciseList() {
@@ -5,7 +9,25 @@ export async function ExerciseList() {
 
   const { data: exercises, error } = await supabase
     .from("exercises")
-    .select("id, name, description, min_age, max_age")
+    .select(
+      `
+        id,
+        name,
+        description,
+        min_age,
+        max_age,
+        exercise_variants (
+          id,
+          variant
+        ),
+        exercise_tags (
+          tags (
+            id,
+            name
+          )
+        )
+      `,
+    )
     .order("name");
 
   if (error) {
@@ -26,25 +48,31 @@ export async function ExerciseList() {
     );
   }
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let favouriteExerciseIds: string[] = [];
+
+  if (user) {
+    const { data: favourites, error: favouritesError } = await supabase
+      .from("user_favourite_exercises")
+      .select("exercise_id")
+      .eq("user_id", user.id);
+
+    if (!favouritesError && favourites) {
+      favouriteExerciseIds = favourites.map(
+        (favourite) => favourite.exercise_id,
+      );
+    }
+  }
+
   return (
-    <div className="grid gap-4">
-      {exercises.map((exercise) => (
-        <div key={exercise.id} className="rounded-lg border p-5">
-          <div className="space-y-2">
-            <h2 className="text-lg font-semibold">{exercise.name}</h2>
-
-            {exercise.description && (
-              <p className="text-sm text-muted-foreground">
-                {exercise.description}
-              </p>
-            )}
-
-            <p className="text-sm">
-              Età: {exercise.min_age}-{exercise.max_age}
-            </p>
-          </div>
-        </div>
-      ))}
-    </div>
+    <ExerciseLibrary
+      exercises={exercises as LibraryExercise[]}
+      initialFavouriteExerciseIds={favouriteExerciseIds}
+    />
   );
+
+  return <ExerciseLibrary exercises={exercises as LibraryExercise[]} />;
 }

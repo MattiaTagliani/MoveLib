@@ -1,4 +1,6 @@
 import { NewExerciseForm } from "@/components/exercises/new-exercise-form";
+import { createClient } from "@/lib/supabase/server";
+import { Suspense } from "react";
 
 export default function NewExercisePage() {
   return (
@@ -11,7 +13,28 @@ export default function NewExercisePage() {
         </p>
       </div>
 
-      <NewExerciseForm />
+      <Suspense fallback={<p>Caricamento...</p>}>
+        <NewExerciseFormContent />
+      </Suspense>
     </main>
   );
+}
+
+async function NewExerciseFormContent() {
+  const supabase = await createClient();
+
+  const { data: tags, error } = await supabase
+    .from("tags")
+    .select("id, name")
+    .order("name");
+
+  if (error) {
+    return (
+      <p className="text-sm text-red-500">
+        Errore durante il caricamento dei tag.
+      </p>
+    );
+  }
+
+  return <NewExerciseForm availableTags={tags} />;
 }
