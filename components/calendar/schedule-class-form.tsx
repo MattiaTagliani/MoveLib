@@ -5,6 +5,11 @@ import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { FormEvent, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { TimePicker } from "@/components/calendar/time-picker";
+import {
+  CalendarColorPicker,
+  CustomCalendarColor,
+} from "@/components/calendar/calendar-color-picker";
 
 interface ClassPreset {
   id: string;
@@ -24,6 +29,9 @@ interface ScheduleClassFormProps {
   presets: ClassPreset[];
   lessons: Lesson[];
   initialDate?: string;
+  customColors: CustomCalendarColor[];
+  onCustomColorCreated: (color: CustomCalendarColor) => void;
+  onCustomColorDeleted: (id: string) => void;
   onDateConsumed?: () => void;
 }
 
@@ -31,6 +39,9 @@ export function ScheduleClassForm({
   presets,
   lessons,
   initialDate = "",
+  customColors,
+  onCustomColorCreated,
+  onCustomColorDeleted,
   onDateConsumed,
 }: ScheduleClassFormProps) {
   const router = useRouter();
@@ -219,12 +230,10 @@ export function ScheduleClassForm({
               Inizio
             </label>
 
-            <Input
+            <TimePicker
               id="schedule-start"
-              type="time"
-              step={300}
               value={startTime}
-              onChange={(event) => setStartTime(event.target.value)}
+              onChange={setStartTime}
             />
           </div>
 
@@ -233,34 +242,24 @@ export function ScheduleClassForm({
               Fine
             </label>
 
-            <Input
+            <TimePicker
               id="schedule-end"
-              type="time"
-              step={300}
               value={endTime}
-              onChange={(event) => setEndTime(event.target.value)}
+              onChange={setEndTime}
             />
           </div>
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="schedule-color" className="text-sm font-medium">
-            Colore
-          </label>
+          <p className="text-sm font-medium">Colore</p>
 
-          <div className="flex items-center gap-3">
-            <input
-              id="schedule-color"
-              type="color"
-              value={color}
-              onChange={(event) => setColor(event.target.value)}
-              className="h-10 w-14 cursor-pointer rounded border bg-background p-1"
-            />
-
-            <span className="text-sm text-muted-foreground">
-              Colore utilizzato nel calendario
-            </span>
-          </div>
+          <CalendarColorPicker
+            value={color}
+            onChange={setColor}
+            customColors={customColors}
+            onCustomColorCreated={onCustomColorCreated}
+            onCustomColorDeleted={onCustomColorDeleted}
+          />
         </div>
 
         <div className="space-y-2">

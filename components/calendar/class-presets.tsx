@@ -5,6 +5,11 @@ import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { TimePicker } from "@/components/calendar/time-picker";
+import {
+  CalendarColorPicker,
+  CustomCalendarColor,
+} from "@/components/calendar/calendar-color-picker";
 
 export interface ClassPreset {
   id: string;
@@ -17,6 +22,9 @@ export interface ClassPreset {
 
 interface ClassPresetsProps {
   initialPresets: ClassPreset[];
+  customColors: CustomCalendarColor[];
+  onCustomColorCreated: (color: CustomCalendarColor) => void;
+  onCustomColorDeleted: (id: string) => void;
 }
 
 const DAYS = [
@@ -29,7 +37,12 @@ const DAYS = [
   { value: 7, label: "Domenica" },
 ];
 
-export function ClassPresets({ initialPresets }: ClassPresetsProps) {
+export function ClassPresets({
+  initialPresets,
+  customColors,
+  onCustomColorCreated,
+  onCustomColorDeleted,
+}: ClassPresetsProps) {
   const router = useRouter();
 
   const [name, setName] = useState("");
@@ -179,17 +192,17 @@ export function ClassPresets({ initialPresets }: ClassPresetsProps) {
                       {formatTime(preset.end_time)}
                     </p>
                   </div>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={deletingId === preset.id}
-                    onClick={() => void deletePreset(preset)}
-                  >
-                    {deletingId === preset.id ? "Eliminazione..." : "Elimina"}
-                  </Button>
                 </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={deletingId === preset.id}
+                  onClick={() => void deletePreset(preset)}
+                >
+                  {deletingId === preset.id ? "Eliminazione..." : "Elimina"}
+                </Button>
               </div>
             ))}
           </div>
@@ -242,52 +255,40 @@ export function ClassPresets({ initialPresets }: ClassPresetsProps) {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <label htmlFor="preset-start" className="text-sm font-medium">
+              <label htmlFor="schedule-start" className="text-sm font-medium">
                 Inizio
               </label>
 
-              <Input
-                id="preset-start"
-                type="time"
-                step={300}
+              <TimePicker
+                id="schedule-start"
                 value={startTime}
-                onChange={(event) => setStartTime(event.target.value)}
+                onChange={setStartTime}
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="preset-end" className="text-sm font-medium">
+              <label htmlFor="schedule-end" className="text-sm font-medium">
                 Fine
               </label>
 
-              <Input
-                id="preset-end"
-                type="time"
-                step={300}
+              <TimePicker
+                id="schedule-end"
                 value={endTime}
-                onChange={(event) => setEndTime(event.target.value)}
+                onChange={setEndTime}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="preset-color" className="text-sm font-medium">
-              Colore
-            </label>
+            <p className="text-sm font-medium">Colore</p>
 
-            <div className="flex items-center gap-3">
-              <input
-                id="preset-color"
-                type="color"
-                value={color}
-                onChange={(event) => setColor(event.target.value)}
-                className="h-10 w-14 cursor-pointer rounded border bg-background p-1"
-              />
-
-              <span className="text-sm text-muted-foreground">
-                Colore utilizzato nel calendario
-              </span>
-            </div>
+            <CalendarColorPicker
+              value={color}
+              onChange={setColor}
+              customColors={customColors}
+              onCustomColorCreated={onCustomColorCreated}
+              onCustomColorDeleted={onCustomColorDeleted}
+            />
           </div>
 
           <Button type="submit" disabled={isSaving} className="w-full">

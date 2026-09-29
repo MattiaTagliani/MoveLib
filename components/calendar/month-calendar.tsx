@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { useMemo, useState } from "react";
 import { ScheduledClassEditor } from "./scheduled-class-editor";
+import { CustomCalendarColor } from "@/components/calendar/calendar-color-picker";
 
 export interface CalendarLesson {
   id: string;
@@ -29,6 +30,9 @@ interface MonthCalendarProps {
   scheduledClasses: ScheduledClass[];
   lessons: CalendarLesson[];
   presets: CalendarPreset[];
+  customColors: CustomCalendarColor[];
+  onCustomColorCreated: (color: CustomCalendarColor) => void;
+  onCustomColorDeleted: (id: string) => void;
   onAddDate: (date: string) => void;
 }
 
@@ -38,6 +42,9 @@ export function MonthCalendar({
   scheduledClasses,
   lessons,
   presets,
+  customColors,
+  onCustomColorCreated,
+  onCustomColorDeleted,
   onAddDate,
 }: MonthCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -206,6 +213,9 @@ export function MonthCalendar({
         <ScheduledClassEditor
           scheduledClass={selectedClass}
           lessons={lessons}
+          customColors={customColors}
+          onCustomColorCreated={onCustomColorCreated}
+          onCustomColorDeleted={onCustomColorDeleted}
           onClose={() => setSelectedClass(null)}
         />
       )}

@@ -1,4 +1,3 @@
-import { ClassPreset, ClassPresets } from "@/components/calendar/class-presets";
 import {
   CalendarLesson,
   ScheduledClass,
@@ -21,20 +20,6 @@ export default function CalendarPage() {
       <Suspense fallback={<p>Caricamento calendario...</p>}>
         <CalendarContent />
       </Suspense>
-
-      <section className="space-y-4 border-t pt-8">
-        <div>
-          <h2 className="text-2xl font-semibold">Preset corsi</h2>
-
-          <p className="mt-1 text-muted-foreground">
-            Gestisci gli orari che utilizzi abitualmente.
-          </p>
-        </div>
-
-        <Suspense fallback={<p>Caricamento preset...</p>}>
-          <ClassPresetsContent />
-        </Suspense>
-      </section>
     </main>
   );
 }
@@ -46,6 +31,7 @@ async function CalendarContent() {
     { data: presets, error: presetsError },
     { data: lessons, error: lessonsError },
     { data: scheduledClasses, error: scheduledClassesError },
+    { data: customColors, error: customColorsError },
   ] = await Promise.all([
     supabase
       .from("class_presets")
@@ -71,9 +57,15 @@ async function CalendarContent() {
       )
       .order("scheduled_date")
       .order("start_time"),
+
+    supabase
+      .from("user_calendar_colors")
+      .select("id, color")
+      .order("created_at"),
   ]);
 
-  const error = presetsError || lessonsError || scheduledClassesError;
+  const error =
+    presetsError || lessonsError || scheduledClassesError || customColorsError;
 
   if (error) {
     return (
@@ -85,33 +77,11 @@ async function CalendarContent() {
   }
 
   return (
-    <div className="space-y-8">
-      <CalendarWorkspace
-        scheduledClasses={scheduledClasses as ScheduledClass[]}
-        lessons={lessons as CalendarLesson[]}
-        presets={presets}
-      />
-    </div>
+    <CalendarWorkspace
+      scheduledClasses={scheduledClasses as ScheduledClass[]}
+      lessons={lessons as CalendarLesson[]}
+      presets={presets}
+      initialCustomColors={customColors}
+    />
   );
-}
-
-async function ClassPresetsContent() {
-  const supabase = await createClient();
-
-  const { data: presets, error } = await supabase
-    .from("class_presets")
-    .select("id, name, day_of_week, start_time, end_time, color")
-    .order("day_of_week")
-    .order("start_time");
-
-  if (error) {
-    return (
-      <div className="space-y-2 text-sm text-red-500">
-        <p>Errore durante il caricamento dei preset.</p>
-        <p>{error.message}</p>
-      </div>
-    );
-  }
-
-  return <ClassPresets initialPresets={presets as ClassPreset[]} />;
 }

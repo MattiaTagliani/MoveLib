@@ -4,6 +4,7 @@ import { ScheduleClassForm } from "@/components/calendar/schedule-class-form";
 import { SchedulePresetForm } from "@/components/calendar/schedule-preset-form";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import { CustomCalendarColor } from "@/components/calendar/calendar-color-picker";
 
 interface ClassPreset {
   id: string;
@@ -24,6 +25,9 @@ interface CalendarSchedulerProps {
   lessons: Lesson[];
   initialDate: string;
   onDateConsumed: () => void;
+  customColors: CustomCalendarColor[];
+  onCustomColorCreated: (color: CustomCalendarColor) => void;
+  onCustomColorDeleted: (id: string) => void;
 }
 
 type SchedulerMode = "single" | "preset";
@@ -32,6 +36,9 @@ export function CalendarScheduler({
   presets,
   lessons,
   initialDate,
+  customColors,
+  onCustomColorCreated,
+  onCustomColorDeleted,
   onDateConsumed,
 }: CalendarSchedulerProps) {
   const [mode, setMode] = useState<SchedulerMode>("single");
@@ -77,6 +84,9 @@ export function CalendarScheduler({
             presets={presets}
             lessons={lessons}
             initialDate={initialDate}
+            customColors={customColors}
+            onCustomColorCreated={onCustomColorCreated}
+            onCustomColorDeleted={onCustomColorDeleted}
             onDateConsumed={onDateConsumed}
           />
         ) : (

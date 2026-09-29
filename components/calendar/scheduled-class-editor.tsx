@@ -10,16 +10,27 @@ import {
   CalendarLesson,
   ScheduledClass,
 } from "@/components/calendar/month-calendar";
+import { TimePicker } from "@/components/calendar/time-picker";
+import {
+  CalendarColorPicker,
+  CustomCalendarColor,
+} from "@/components/calendar/calendar-color-picker";
 
 interface ScheduledClassEditorProps {
   scheduledClass: ScheduledClass;
   lessons: CalendarLesson[];
+  customColors: CustomCalendarColor[];
+  onCustomColorCreated: (color: CustomCalendarColor) => void;
+  onCustomColorDeleted: (id: string) => void;
   onClose: () => void;
 }
 
 export function ScheduledClassEditor({
   scheduledClass,
   lessons,
+  customColors,
+  onCustomColorCreated,
+  onCustomColorDeleted,
   onClose,
 }: ScheduledClassEditorProps) {
   const router = useRouter();
@@ -35,6 +46,7 @@ export function ScheduledClassEditor({
     scheduledClass.end_time?.slice(0, 5) ?? "",
   );
   const [lessonId, setLessonId] = useState(scheduledClass.lesson_id ?? "");
+  const [color, setColor] = useState(scheduledClass.color ?? "#3b82f6");
 
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -83,6 +95,7 @@ export function ScheduledClassEditor({
         start_time: startTime || null,
         end_time: endTime || null,
         lesson_id: lessonId || null,
+        color,
         updated_at: new Date().toISOString(),
       })
       .eq("id", scheduledClass.id);
@@ -186,12 +199,10 @@ export function ScheduledClassEditor({
               Inizio
             </label>
 
-            <Input
+            <TimePicker
               id="edit-scheduled-start"
-              type="time"
-              step={300}
               value={startTime}
-              onChange={(event) => setStartTime(event.target.value)}
+              onChange={setStartTime}
             />
           </div>
 
@@ -200,14 +211,24 @@ export function ScheduledClassEditor({
               Fine
             </label>
 
-            <Input
+            <TimePicker
               id="edit-scheduled-end"
-              type="time"
-              step={300}
               value={endTime}
-              onChange={(event) => setEndTime(event.target.value)}
+              onChange={setEndTime}
             />
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Colore</p>
+
+          <CalendarColorPicker
+            value={color}
+            onChange={setColor}
+            customColors={customColors}
+            onCustomColorCreated={onCustomColorCreated}
+            onCustomColorDeleted={onCustomColorDeleted}
+          />
         </div>
 
         <div className="space-y-2">
