@@ -17,6 +17,7 @@ export interface ScheduledClass {
   end_time: string | null;
   lesson_id: string | null;
   class_preset_id: string | null;
+  color: string | null;
 }
 
 interface CalendarPreset {
@@ -164,6 +165,8 @@ export function MonthCalendar({
                           (preset) =>
                             preset.id === scheduledClass.class_preset_id,
                         );
+                        const eventColor =
+                          scheduledClass.color ?? preset?.color;
 
                         return (
                           <button
@@ -172,9 +175,9 @@ export function MonthCalendar({
                             onClick={() => setSelectedClass(scheduledClass)}
                             className="block w-full rounded-md border px-2 py-1.5 text-left text-xs hover:opacity-80"
                             style={
-                              preset
+                              eventColor
                                 ? {
-                                    borderColor: preset.color,
+                                    borderColor: eventColor,
                                     borderLeftWidth: "4px",
                                   }
                                 : undefined

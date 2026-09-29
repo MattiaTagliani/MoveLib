@@ -189,6 +189,7 @@ export function ScheduledClassEditor({
             <Input
               id="edit-scheduled-start"
               type="time"
+              step={300}
               value={startTime}
               onChange={(event) => setStartTime(event.target.value)}
             />
@@ -202,6 +203,7 @@ export function ScheduledClassEditor({
             <Input
               id="edit-scheduled-end"
               type="time"
+              step={300}
               value={endTime}
               onChange={(event) => setEndTime(event.target.value)}
             />

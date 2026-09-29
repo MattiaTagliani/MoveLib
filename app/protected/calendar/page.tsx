@@ -65,7 +65,8 @@ async function CalendarContent() {
         start_time,
         end_time,
         lesson_id,
-        class_preset_id
+        class_preset_id,
+        color
       `,
       )
       .order("scheduled_date")

@@ -12,6 +12,7 @@ interface ClassPreset {
   day_of_week: number;
   start_time: string;
   end_time: string;
+  color: string;
 }
 
 interface Lesson {
@@ -40,6 +41,7 @@ export function ScheduleClassForm({
   const [scheduledDate, setScheduledDate] = useState(initialDate);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [color, setColor] = useState("#3b82f6");
 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +69,7 @@ export function ScheduleClassForm({
     setTitle(preset.name);
     setStartTime(preset.start_time.slice(0, 5));
     setEndTime(preset.end_time.slice(0, 5));
+    setColor(preset.color);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -127,6 +130,7 @@ export function ScheduleClassForm({
         scheduled_date: scheduledDate,
         start_time: startTime || null,
         end_time: endTime || null,
+        color,
       });
 
     if (insertError) {
@@ -141,6 +145,7 @@ export function ScheduleClassForm({
     setScheduledDate("");
     setStartTime("");
     setEndTime("");
+    setColor("#3b82f6");
 
     onDateConsumed?.();
 
@@ -217,6 +222,7 @@ export function ScheduleClassForm({
             <Input
               id="schedule-start"
               type="time"
+              step={300}
               value={startTime}
               onChange={(event) => setStartTime(event.target.value)}
             />
@@ -230,9 +236,30 @@ export function ScheduleClassForm({
             <Input
               id="schedule-end"
               type="time"
+              step={300}
               value={endTime}
               onChange={(event) => setEndTime(event.target.value)}
             />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="schedule-color" className="text-sm font-medium">
+            Colore
+          </label>
+
+          <div className="flex items-center gap-3">
+            <input
+              id="schedule-color"
+              type="color"
+              value={color}
+              onChange={(event) => setColor(event.target.value)}
+              className="h-10 w-14 cursor-pointer rounded border bg-background p-1"
+            />
+
+            <span className="text-sm text-muted-foreground">
+              Colore utilizzato nel calendario
+            </span>
           </div>
         </div>
 

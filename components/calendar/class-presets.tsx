@@ -249,6 +249,7 @@ export function ClassPresets({ initialPresets }: ClassPresetsProps) {
               <Input
                 id="preset-start"
                 type="time"
+                step={300}
                 value={startTime}
                 onChange={(event) => setStartTime(event.target.value)}
               />
@@ -262,6 +263,7 @@ export function ClassPresets({ initialPresets }: ClassPresetsProps) {
               <Input
                 id="preset-end"
                 type="time"
+                step={300}
                 value={endTime}
                 onChange={(event) => setEndTime(event.target.value)}
               />

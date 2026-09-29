@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
 import { ScheduleClassForm } from "@/components/calendar/schedule-class-form";
 import { SchedulePresetForm } from "@/components/calendar/schedule-preset-form";
+import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 
 interface ClassPreset {
   id: string;
@@ -26,7 +26,7 @@ interface CalendarSchedulerProps {
   onDateConsumed: () => void;
 }
 
-type SchedulerMode = "preset" | "single";
+type SchedulerMode = "single" | "preset";
 
 export function CalendarScheduler({
   presets,
@@ -34,9 +34,7 @@ export function CalendarScheduler({
   initialDate,
   onDateConsumed,
 }: CalendarSchedulerProps) {
-  const [mode, setMode] = useState<SchedulerMode>(
-    initialDate ? "single" : "preset",
-  );
+  const [mode, setMode] = useState<SchedulerMode>("single");
 
   useEffect(() => {
     if (initialDate) {
@@ -45,19 +43,11 @@ export function CalendarScheduler({
   }, [initialDate]);
 
   return (
-    <section className="max-w-2xl rounded-lg border">
+    <section
+      id="calendar-scheduler"
+      className="max-w-2xl scroll-mt-6 rounded-lg border"
+    >
       <div className="grid grid-cols-2 border-b">
-        <Button
-          type="button"
-          variant="ghost"
-          className={`rounded-none ${
-            mode === "preset" ? "bg-muted font-semibold" : ""
-          }`}
-          onClick={() => setMode("preset")}
-        >
-          Preset
-        </Button>
-
         <Button
           type="button"
           variant="ghost"
@@ -68,18 +58,29 @@ export function CalendarScheduler({
         >
           Appuntamento singolo
         </Button>
+
+        <Button
+          type="button"
+          variant="ghost"
+          className={`rounded-none ${
+            mode === "preset" ? "bg-muted font-semibold" : ""
+          }`}
+          onClick={() => setMode("preset")}
+        >
+          Preset
+        </Button>
       </div>
 
       <div className="p-1">
-        {mode === "preset" ? (
-          <SchedulePresetForm presets={presets} />
-        ) : (
+        {mode === "single" ? (
           <ScheduleClassForm
             presets={presets}
             lessons={lessons}
             initialDate={initialDate}
             onDateConsumed={onDateConsumed}
           />
+        ) : (
+          <SchedulePresetForm presets={presets} />
         )}
       </div>
     </section>

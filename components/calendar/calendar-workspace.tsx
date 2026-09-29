@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { CalendarScheduler } from "@/components/calendar/calendar-scheduler";
 import {
   CalendarLesson,
   MonthCalendar,
   ScheduledClass,
 } from "@/components/calendar/month-calendar";
-import { CalendarScheduler } from "@/components/calendar/calendar-scheduler";
+import { useState } from "react";
 
 interface ClassPreset {
   id: string;
@@ -30,13 +30,23 @@ export function CalendarWorkspace({
 }: CalendarWorkspaceProps) {
   const [selectedDate, setSelectedDate] = useState("");
 
+  function handleAddDate(date: string) {
+    setSelectedDate(date);
+
+    window.setTimeout(() => {
+      document
+        .getElementById("calendar-scheduler")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+  }
+
   return (
     <div className="space-y-8">
       <MonthCalendar
         scheduledClasses={scheduledClasses}
         lessons={lessons}
         presets={presets}
-        onAddDate={setSelectedDate}
+        onAddDate={handleAddDate}
       />
 
       <CalendarScheduler
