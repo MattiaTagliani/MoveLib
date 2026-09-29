@@ -21,21 +21,27 @@ export default function ProtectedLayout({
               href="/protected"
               className="text-sm text-muted-foreground hover:text-foreground"
             >
-              Dashboard
+              Home
             </Link>
 
             <Link
               href="/protected/exercises"
               className="text-sm text-muted-foreground hover:text-foreground"
             >
-              Exercises
+              Esercizi
             </Link>
 
             <Link
               href="/protected/lessons"
               className="text-sm text-muted-foreground hover:text-foreground"
             >
-              Lessons
+              Lezioni
+            </Link>
+            <Link
+              href="/protected/calendar"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Calendario
             </Link>
 
             <Suspense>
