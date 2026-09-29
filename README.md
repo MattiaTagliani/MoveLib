@@ -1,109 +1,171 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+# MoveLib
 
-<p align="center">
- The fastest way to build apps with Next.js and Supabase
-</p>
+MoveLib is a web application for organizing a shared library of circus and movement exercises, building lessons and planning classes.
 
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
-</p>
-<br/>
+The project is designed for teachers who need to quickly save, find and reuse exercises while preparing their lessons.
 
 ## Features
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Proxy
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Password-based authentication block installed via the [Supabase UI Library](https://supabase.com/ui/docs/nextjs/password-based-auth)
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+### Exercise library
 
-## Demo
+- Shared exercise library
+- Exercise name and description
+- Minimum and maximum recommended age
+- Reusable tags
+- Exercise variants
+- Search and filtering
+- Age-range filtering
+- Multiple tag filters
+- Per-user favourites
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+### Lessons
 
-## Deploy to Vercel
+- Personal lessons for each user
+- Add exercises from the shared library
+- Use the same exercise multiple times
+- Select a different exercise variant for each occurrence
+- Drag-and-drop exercise ordering
+- Search and filter the exercise library while building a lesson
 
-Vercel deployment will guide you through creating a Supabase account and project.
+### Calendar
 
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
+- Monthly calendar
+- One-off scheduled classes
+- Reusable class presets
+- Recurring class generation over a date range
+- Optional lesson association
+- Independent editing of generated occurrences
+- Custom event colors
+- Reusable personal color palette
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
+### Registration
 
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
+MoveLib does not currently use open self-registration.
 
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
+Users submit an access request. An administrator can review the request and, when approved, send an invitation through Supabase Auth.
 
-## Clone and run locally
+## Roles and permissions
 
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
+MoveLib currently has two roles:
 
-2. Create a Next.js app using the Supabase Starter template npx command
+- `USER`
+- `ADMIN`
 
-   ```bash
-   npx create-next-app --example with-supabase with-supabase-app
-   ```
+The exercise library is collaborative. Both USER and ADMIN accounts can create and edit shared exercises.
 
-   ```bash
-   yarn create next-app --example with-supabase with-supabase-app
-   ```
+Only administrators can perform destructive operations on shared library entities and manage registration requests.
 
-   ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
-   ```
+Lessons, favourites, calendar events, class presets and saved calendar colors are user-specific.
 
-3. Use `cd` to change into the app's directory
+Detailed permissions are documented in:
 
-   ```bash
-   cd with-supabase-app
-   ```
+`docs/permissions.md`
 
-4. Rename `.env.example` to `.env.local` and update the following:
+## Technology
 
-  ```env
-  NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[INSERT SUPABASE PROJECT API PUBLISHABLE OR ANON KEY]
-  ```
-  > [!NOTE]
-  > This example uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, which refers to Supabase's new **publishable** key format.
-  > Both legacy **anon** keys and new **publishable** keys can be used with this variable name during the transition period. Supabase's dashboard may show `NEXT_PUBLIC_SUPABASE_ANON_KEY`; its value can be used in this example.
-  > See the [full announcement](https://github.com/orgs/supabase/discussions/29260) for more information.
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Supabase
+- PostgreSQL
+- Supabase Auth
+- PostgreSQL Row Level Security
+- dnd-kit
 
-  Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` can be found in [your Supabase project's API settings](https://supabase.com/dashboard/project/_?showConnect=true)
+## Project structure
 
-5. You can now run the Next.js local development server:
+```text
+app/
+  auth/                 Authentication and access-request pages
+  protected/            Authenticated application pages
 
-   ```bash
-   npm run dev
-   ```
+components/
+  admin/                Administrative UI
+  calendar/             Calendar, presets and scheduling
+  exercises/            Exercise library and editor
+  lessons/              Lesson library and builder
+  ui/                   Shared UI components
 
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
+lib/
+  supabase/             Supabase clients and helpers
 
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
+docs/
+  permissions.md        Role and data-access documentation
+```
 
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
+## Environment variables
 
-## Feedback and issues
+Create a `.env.local` file for local development.
 
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
+The application uses the following environment variables:
 
-## More Supabase examples
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+NEXT_PUBLIC_SITE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+```
 
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+Never commit `.env.local` or secret Supabase credentials to the repository.
+
+## Local development
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+The project currently runs Next.js development mode with Webpack:
+
+```json
+"dev": "next dev --webpack"
+```
+
+This is intentional for the current Windows development environment.
+
+Then open:
+
+```text
+http://localhost:3000
+```
+
+## Database and security
+
+MoveLib uses Supabase PostgreSQL.
+
+Access to application data is controlled with PostgreSQL Row Level Security policies.
+
+The frontend may hide actions that are unavailable to a user's role, but frontend checks are not considered a security mechanism. Database RLS and server-side authorization remain authoritative.
+
+Privileged Supabase credentials must only be used in server-side code.
+
+## Current development status
+
+Implemented:
+
+- authentication and invitation-based registration;
+- USER and ADMIN roles;
+- shared exercise library;
+- exercise variants;
+- reusable tags;
+- favourites;
+- lesson creation and editing;
+- drag-and-drop lesson exercise ordering;
+- per-occurrence exercise variants;
+- lesson library;
+- monthly calendar;
+- reusable class presets;
+- recurring class scheduling;
+- lesson/calendar association;
+- custom calendar colors;
+- reusable personal calendar color palette.
+
+Planned work includes reusable lesson sections/chunks and additional library export/backup functionality.

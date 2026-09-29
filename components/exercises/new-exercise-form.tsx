@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
 import { ExerciseTag, TagSelector } from "@/components/exercises/tag-selector";
 
 interface NewExerciseFormProps {
@@ -180,7 +181,7 @@ export function NewExerciseForm({ availableTags }: NewExerciseFormProps) {
           <Label>Varianti</Label>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            Aggiungi eventuali varianti dell'esercizio.
+            Aggiungi eventuali varianti dell&apos;esercizio.
           </p>
         </div>
 
@@ -212,7 +213,7 @@ export function NewExerciseForm({ availableTags }: NewExerciseFormProps) {
           <Label>Tag</Label>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            Seleziona i tag associati all'esercizio.
+            Seleziona i tag associati all&apos;esercizio.
           </p>
         </div>
 
@@ -231,7 +232,7 @@ export function NewExerciseForm({ availableTags }: NewExerciseFormProps) {
         </Button>
 
         <Button type="button" variant="outline" asChild>
-          <a href="/protected/exercises">Annulla</a>
+          <Link href="/protected/exercises">Annulla</Link>
         </Button>
       </div>
     </form>

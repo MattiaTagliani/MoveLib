@@ -18,7 +18,7 @@ export default function SignUpPage() {
     setError("");
 
     if (!name.trim() || !email.trim()) {
-      setError("Please enter your name and email.");
+      setError("Inserisci nome ed email.");
       return;
     }
 
@@ -36,17 +36,17 @@ export default function SignUpPage() {
     if (error) {
       if (error.code === "23505") {
         setError(
-          "A pending registration request already exists for this email address.",
+          "Esiste già una richiesta di registrazione in attesa per questo indirizzo email.",
         );
       } else {
-        setError("Something went wrong while submitting your request.");
+        setError("Si è verificato un errore durante l'invio della richiesta.");
       }
 
       return;
     }
 
     setMessage(
-      "Your registration request has been submitted. An administrator will review it.",
+      "La richiesta di registrazione è stata inviata. Un amministratore la esaminerà.",
     );
 
     setName("");
@@ -57,16 +57,17 @@ export default function SignUpPage() {
     <main className="flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-md space-y-6">
         <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-semibold">Request access</h1>
+          <h1 className="text-3xl font-semibold">Richiedi accesso</h1>
+
           <p className="text-muted-foreground">
-            Submit your details and an administrator will review your request.
+            Inserisci i tuoi dati. Un amministratore esaminerà la richiesta.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="name" className="text-sm font-medium">
-              Name
+              Nome
             </label>
 
             <input
@@ -75,7 +76,7 @@ export default function SignUpPage() {
               value={name}
               onChange={(event) => setName(event.target.value)}
               className="w-full rounded-md border px-3 py-2"
-              placeholder="Your name"
+              placeholder="Il tuo nome"
               required
             />
           </div>
@@ -91,7 +92,7 @@ export default function SignUpPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               className="w-full rounded-md border px-3 py-2"
-              placeholder="you@example.com"
+              placeholder="nome@esempio.it"
               required
             />
           </div>
@@ -101,7 +102,7 @@ export default function SignUpPage() {
             disabled={loading}
             className="w-full rounded-md bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50"
           >
-            {loading ? "Submitting..." : "Request access"}
+            {loading ? "Invio..." : "Invia richiesta"}
           </button>
         </form>
 
@@ -114,9 +115,9 @@ export default function SignUpPage() {
         )}
 
         <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
+          Hai già un account?{" "}
           <Link href="/auth/login" className="underline">
-            Log in
+            Accedi
           </Link>
         </p>
       </div>

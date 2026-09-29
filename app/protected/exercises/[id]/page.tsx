@@ -16,7 +16,7 @@ export default function ExercisePage({ params }: ExercisePageProps) {
         <h1 className="text-3xl font-semibold">Modifica esercizio</h1>
 
         <p className="mt-2 text-muted-foreground">
-          Modifica i dati e le varianti dell'esercizio.
+          Modifica i dati e le varianti dell&apos;esercizio.
         </p>
       </div>
 

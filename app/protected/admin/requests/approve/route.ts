@@ -12,7 +12,7 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json(
-      { error: "You must be logged in." },
+      { error: "Devi effettuare l'accesso." },
       { status: 401 },
     );
   }
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
   if (profileError || !profile || profile.role !== "ADMIN") {
     return NextResponse.json(
-      { error: "You are not authorized to approve registrations." },
+      { error: "Devi effettuare l'accesso." },
       { status: 403 },
     );
   }
@@ -37,7 +37,10 @@ export async function POST(request: Request) {
 
   if (!requestId || typeof requestId !== "string") {
     return NextResponse.json(
-      { error: "A valid registration request ID is required." },
+      {
+        error:
+          "È necessario specificare una richiesta di registrazione valida.",
+      },
       { status: 400 },
     );
   }
@@ -51,7 +54,7 @@ export async function POST(request: Request) {
 
   if (requestError || !registrationRequest) {
     return NextResponse.json(
-      { error: "Registration request not found." },
+      { error: "Richiesta di registrazione non trovata." },
       { status: 404 },
     );
   }
@@ -59,7 +62,7 @@ export async function POST(request: Request) {
   // 5. Only pending requests can be approved.
   if (registrationRequest.status !== "PENDING") {
     return NextResponse.json(
-      { error: "This registration request has already been processed." },
+      { error: "Questa richiesta di registrazione è già stata elaborata." },
       { status: 400 },
     );
   }
@@ -83,9 +86,7 @@ export async function POST(request: Request) {
 
   if (existingUser) {
     return NextResponse.json(
-      {
-        error: "A user with this email address already exists.",
-      },
+      { error: "Esiste già un utente con questo indirizzo email." },
       { status: 409 },
     );
   }
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "The invitation was sent, but the registration request could not be marked as approved.",
+          "L'invito è stato inviato, ma non è stato possibile contrassegnare la richiesta come approvata.",
       },
       { status: 500 },
     );

@@ -42,7 +42,7 @@ export default function RegistrationRequests({
       setLoadingId(null);
 
       if (!response.ok) {
-        setError(result.error ?? "Something went wrong.");
+        setError(result.error ?? "Si è verificato un errore.");
         return;
       }
 
@@ -79,7 +79,7 @@ export default function RegistrationRequests({
   if (requests.length === 0) {
     return (
       <div className="rounded-lg border p-6 text-sm text-muted-foreground">
-        There are no registration requests.
+        Non ci sono richieste di registrazione.
       </div>
     );
   }
@@ -96,11 +96,11 @@ export default function RegistrationRequests({
         <table className="w-full text-sm">
           <thead className="border-b bg-muted/50">
             <tr>
-              <th className="px-4 py-3 text-left font-medium">Name</th>
+              <th className="px-4 py-3 text-left font-medium">Nome</th>
               <th className="px-4 py-3 text-left font-medium">Email</th>
-              <th className="px-4 py-3 text-left font-medium">Status</th>
-              <th className="px-4 py-3 text-left font-medium">Submitted</th>
-              <th className="px-4 py-3 text-right font-medium">Actions</th>
+              <th className="px-4 py-3 text-left font-medium">Stato</th>
+              <th className="px-4 py-3 text-left font-medium">Data</th>
+              <th className="px-4 py-3 text-right font-medium">Azioni</th>
             </tr>
           </thead>
 
@@ -124,12 +124,16 @@ export default function RegistrationRequests({
                             : "font-medium text-red-600"
                       }
                     >
-                      {request.status}
+                      {request.status === "PENDING"
+                        ? "In attesa"
+                        : request.status === "APPROVED"
+                          ? "Approvata"
+                          : "Rifiutata"}
                     </span>
                   </td>
 
                   <td className="px-4 py-3">
-                    {new Date(request.created_at).toLocaleString()}
+                    {new Date(request.created_at).toLocaleString("it-IT")}
                   </td>
 
                   <td className="px-4 py-3">
@@ -142,7 +146,7 @@ export default function RegistrationRequests({
                             disabled={isLoading}
                             className="rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
                           >
-                            {isLoading ? "Updating..." : "Approve"}
+                            {isLoading ? "Aggiornamento..." : "Approva"}
                           </button>
 
                           <button
@@ -151,7 +155,7 @@ export default function RegistrationRequests({
                             disabled={isLoading}
                             className="rounded-md border px-3 py-1.5 text-sm disabled:opacity-50"
                           >
-                            Reject
+                            Rifiuta
                           </button>
                         </>
                       )}

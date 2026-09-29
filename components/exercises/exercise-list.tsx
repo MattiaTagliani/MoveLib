@@ -67,9 +67,18 @@ export async function ExerciseList() {
     }
   }
 
+  const normalizedExercises: LibraryExercise[] = exercises.map((exercise) => ({
+    ...exercise,
+    exercise_tags: exercise.exercise_tags.flatMap((exerciseTag) =>
+      exerciseTag.tags.map((tag) => ({
+        tags: tag,
+      })),
+    ),
+  }));
+
   return (
     <ExerciseLibrary
-      exercises={exercises as LibraryExercise[]}
+      exercises={normalizedExercises}
       initialFavouriteExerciseIds={favouriteExerciseIds}
     />
   );

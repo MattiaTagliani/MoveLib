@@ -288,7 +288,7 @@ export function EditExerciseForm({
           <Label>Varianti</Label>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            Aggiungi, modifica o rimuovi le varianti dell'esercizio.
+            Aggiungi, modifica o rimuovi le varianti dell&apos;esercizio.
           </p>
         </div>
 
@@ -320,7 +320,7 @@ export function EditExerciseForm({
           <Label>Tag</Label>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            Seleziona i tag associati all'esercizio.
+            Seleziona i tag associati all&apos;esercizio.
           </p>
         </div>
 

@@ -97,11 +97,22 @@ async function LessonContent({ params }: { params: Promise<{ id: string }> }) {
     }
   }
 
+  const normalizedExercises: LessonBuilderExercise[] = exercises.map(
+    (exercise) => ({
+      ...exercise,
+      exercise_tags: exercise.exercise_tags.flatMap((exerciseTag) =>
+        exerciseTag.tags.map((tag) => ({
+          tags: tag,
+        })),
+      ),
+    }),
+  );
+
   return (
     <LessonBuilder
       lessonId={lesson.id}
       lessonTitle={lesson.title}
-      exercises={exercises as LessonBuilderExercise[]}
+      exercises={normalizedExercises}
       initialLessonExercises={
         lesson.lesson_exercises as InitialLessonExercise[]
       }
