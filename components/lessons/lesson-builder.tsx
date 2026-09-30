@@ -74,6 +74,20 @@ interface LessonBlock {
   exercises: SelectedExercise[];
 }
 
+interface BlockLessonItem {
+  type: "block";
+  key: string;
+  block: LessonBlock;
+}
+
+interface ExerciseLessonItem {
+  type: "exercise";
+  key: string;
+  exercise: SelectedExercise;
+}
+
+type LessonItem = BlockLessonItem | ExerciseLessonItem;
+
 interface LessonBuilderProps {
   lessonId: string;
   lessonTitle: string;

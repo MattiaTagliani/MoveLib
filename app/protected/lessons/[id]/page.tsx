@@ -50,6 +50,7 @@ async function LessonContent({ params }: { params: Promise<{ id: string }> }) {
         exercise_id,
         variant_id,
         position,
+        lesson_position,
         lesson_block_id
       )
     `,
@@ -142,7 +143,7 @@ async function LessonContent({ params }: { params: Promise<{ id: string }> }) {
       id: lessonExercise.id,
       exercise_id: lessonExercise.exercise_id,
       variant_id: lessonExercise.variant_id,
-      position: lessonExercise.position,
+      position: lessonExercise.lesson_position ?? lessonExercise.position,
     }));
 
   return (

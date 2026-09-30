@@ -44,13 +44,30 @@ export function NewExerciseForm({ availableTags }: NewExerciseFormProps) {
     );
   }
 
+  function resetForm() {
+    setName("");
+    setDescription("");
+    setMinAge("");
+    setMaxAge("");
+    setVariants([]);
+    setSelectedTagIds([]);
+    setError(null);
+    setIsLoading(false);
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     setError(null);
 
+    const trimmedName = name.trim();
     const parsedMinAge = Number(minAge);
     const parsedMaxAge = Number(maxAge);
+
+    if (!trimmedName) {
+      setError("Inserisci il nome dell'esercizio.");
+      return;
+    }
 
     if (
       !Number.isInteger(parsedMinAge) ||
@@ -64,63 +81,71 @@ export function NewExerciseForm({ availableTags }: NewExerciseFormProps) {
 
     setIsLoading(true);
 
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-    const { data: exercise, error: insertError } = await supabase
-      .from("exercises")
-      .insert({
-        name: name.trim(),
-        description: description.trim() || null,
-        min_age: parsedMinAge,
-        max_age: parsedMaxAge,
-      })
-      .select("id")
-      .single();
+      const { data: exercise, error: insertError } = await supabase
+        .from("exercises")
+        .insert({
+          name: trimmedName,
+          description: description.trim() || null,
+          min_age: parsedMinAge,
+          max_age: parsedMaxAge,
+        })
+        .select("id")
+        .single();
 
-    if (insertError) {
-      setError(insertError.message);
-      setIsLoading(false);
-      return;
-    }
-
-    const validVariants = variants
-      .map((variant) => variant.trim())
-      .filter((variant) => variant.length > 0);
-
-    if (validVariants.length > 0) {
-      const { error: variantsError } = await supabase
-        .from("exercise_variants")
-        .insert(
-          validVariants.map((variant) => ({
-            exercise_id: exercise.id,
-            variant,
-          })),
-        );
-
-      if (variantsError) {
-        setError(variantsError.message);
-        setIsLoading(false);
-        return;
+      if (insertError) {
+        throw insertError;
       }
-    }
 
-    if (selectedTagIds.length > 0) {
-      const { error: tagsError } = await supabase.from("exercise_tags").insert(
-        selectedTagIds.map((tagId) => ({
-          exercise_id: exercise.id,
-          tag_id: tagId,
-        })),
+      const validVariants = variants
+        .map((variant) => variant.trim())
+        .filter((variant) => variant.length > 0);
+
+      if (validVariants.length > 0) {
+        const { error: variantsError } = await supabase
+          .from("exercise_variants")
+          .insert(
+            validVariants.map((variant) => ({
+              exercise_id: exercise.id,
+              variant,
+            })),
+          );
+
+        if (variantsError) {
+          throw variantsError;
+        }
+      }
+
+      if (selectedTagIds.length > 0) {
+        const { error: tagsError } = await supabase
+          .from("exercise_tags")
+          .insert(
+            selectedTagIds.map((tagId) => ({
+              exercise_id: exercise.id,
+              tag_id: tagId,
+            })),
+          );
+
+        if (tagsError) {
+          throw tagsError;
+        }
+      }
+
+      resetForm();
+      router.replace("/protected/exercises");
+    } catch (submitError) {
+      console.error("Exercise creation failed:", submitError);
+
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Errore durante la creazione dell'esercizio.",
       );
 
-      if (tagsError) {
-        setError(tagsError.message);
-        setIsLoading(false);
-        return;
-      }
+      setIsLoading(false);
     }
-
-    router.push("/protected/exercises");
-    router.refresh();
   }
 
   return (
