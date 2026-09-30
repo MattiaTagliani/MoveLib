@@ -69,11 +69,11 @@ export async function ExerciseList() {
 
   const normalizedExercises: LibraryExercise[] = exercises.map((exercise) => ({
     ...exercise,
-    exercise_tags: exercise.exercise_tags.flatMap((exerciseTag) =>
-      exerciseTag.tags.map((tag) => ({
-        tags: tag,
-      })),
-    ),
+    exercise_tags: exercise.exercise_tags.map((exerciseTag) => ({
+      tags: Array.isArray(exerciseTag.tags)
+        ? exerciseTag.tags[0]
+        : exerciseTag.tags,
+    })),
   }));
 
   return (

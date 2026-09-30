@@ -1,7 +1,9 @@
 import {
-  InitialLessonExercise,
+  InitialLessonBlock,
+  InitialUnblockedExercise,
   LessonBuilder,
   LessonBuilderExercise,
+  ReusableLessonBlock,
 } from "@/components/lessons/lesson-builder";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
@@ -32,11 +34,23 @@ async function LessonContent({ params }: { params: Promise<{ id: string }> }) {
       `
       id,
       title,
+      lesson_blocks (
+        id,
+        name,
+        position,
+        lesson_exercises (
+          id,
+          exercise_id,
+          variant_id,
+          position
+        )
+      ),
       lesson_exercises (
         id,
         exercise_id,
         variant_id,
-        position
+        position,
+        lesson_block_id
       )
     `,
     )
@@ -82,40 +96,65 @@ async function LessonContent({ params }: { params: Promise<{ id: string }> }) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  let favouriteExerciseIds: string[] = [];
-
-  if (user) {
-    const { data: favourites } = await supabase
-      .from("user_favourite_exercises")
-      .select("exercise_id")
-      .eq("user_id", user.id);
-
-    if (favourites) {
-      favouriteExerciseIds = favourites.map(
-        (favourite) => favourite.exercise_id,
-      );
-    }
+  if (!user) {
+    notFound();
   }
+
+  const { data: favourites } = await supabase
+    .from("user_favourite_exercises")
+    .select("exercise_id")
+    .eq("user_id", user.id);
+
+  const favouriteExerciseIds =
+    favourites?.map((favourite) => favourite.exercise_id) ?? [];
+
+  const { data: reusableBlocks } = await supabase
+    .from("reusable_lesson_blocks")
+    .select(
+      `
+      id,
+      name,
+      reusable_lesson_block_exercises (
+        id,
+        exercise_id,
+        variant_id,
+        position
+      )
+    `,
+    )
+    .eq("user_id", user.id)
+    .order("name");
 
   const normalizedExercises: LessonBuilderExercise[] = exercises.map(
     (exercise) => ({
       ...exercise,
-      exercise_tags: exercise.exercise_tags.flatMap((exerciseTag) =>
-        exerciseTag.tags.map((tag) => ({
-          tags: tag,
-        })),
-      ),
+      exercise_tags: exercise.exercise_tags.map((exerciseTag) => ({
+        tags: Array.isArray(exerciseTag.tags)
+          ? exerciseTag.tags[0]
+          : exerciseTag.tags,
+      })),
     }),
   );
+
+  const unblockedExercises = lesson.lesson_exercises
+    .filter((lessonExercise) => lessonExercise.lesson_block_id === null)
+    .map((lessonExercise) => ({
+      id: lessonExercise.id,
+      exercise_id: lessonExercise.exercise_id,
+      variant_id: lessonExercise.variant_id,
+      position: lessonExercise.position,
+    }));
 
   return (
     <LessonBuilder
       lessonId={lesson.id}
       lessonTitle={lesson.title}
       exercises={normalizedExercises}
-      initialLessonExercises={
-        lesson.lesson_exercises as InitialLessonExercise[]
+      initialBlocks={lesson.lesson_blocks as InitialLessonBlock[]}
+      initialUnblockedExercises={
+        unblockedExercises as InitialUnblockedExercise[]
       }
+      reusableBlocks={(reusableBlocks ?? []) as ReusableLessonBlock[]}
       favouriteExerciseIds={favouriteExerciseIds}
     />
   );
