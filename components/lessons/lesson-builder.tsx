@@ -1,38 +1,40 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+
 import { Input } from "@/components/ui/input";
+
 import { createClient } from "@/lib/supabase/client";
-import { move } from "@dnd-kit/helpers";
-import { DragDropProvider, useDroppable } from "@dnd-kit/react";
-import { useSortable } from "@dnd-kit/react/sortable";
+
 import { useRouter } from "next/navigation";
-import {
-  type ComponentProps,
-  type ReactNode,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface ExerciseVariant {
   id: string;
+
   variant: string;
 }
 
 interface Tag {
   id: string;
+
   name: string;
 }
 
 export interface LessonBuilderExercise {
   id: string;
+
   name: string;
+
   description: string | null;
+
   min_age: number;
+
   max_age: number;
+
   exercise_variants: ExerciseVariant[];
+
   exercise_tags: {
     tags: Tag;
   }[];
@@ -40,59 +42,81 @@ export interface LessonBuilderExercise {
 
 interface InitialLessonExercise {
   id: string;
+
   exercise_id: string;
+
   variant_id: string | null;
+
   position: number;
 }
 
 export interface InitialLessonBlock {
   id: string;
+
   name: string;
+
   position: number;
+
   lesson_exercises: InitialLessonExercise[];
 }
 
 export interface InitialUnblockedExercise {
   id: string;
+
   exercise_id: string;
+
   variant_id: string | null;
+
   position: number;
 }
 
 interface ReusableLessonBlockExercise {
   id: string;
+
   exercise_id: string;
+
   variant_id: string | null;
+
   position: number;
 }
 
 export interface ReusableLessonBlock {
   id: string;
+
   name: string;
+
   reusable_lesson_block_exercises: ReusableLessonBlockExercise[];
 }
 
 interface SelectedExercise {
   key: string;
+
   exerciseId: string;
+
   variantId: string | null;
 }
 
 interface LessonBlock {
   key: string;
+
   name: string;
+
   exercises: SelectedExercise[];
 }
 
 interface BlockLessonItem {
   type: "block";
+
   key: string;
+
   block: LessonBlock;
 }
 
 interface ExerciseLessonItem {
   type: "exercise";
+
   key: string;
+
   exercise: SelectedExercise;
 }
 
@@ -100,42 +124,48 @@ type LessonItem = BlockLessonItem | ExerciseLessonItem;
 
 interface LessonBuilderProps {
   lessonId: string;
+
   lessonTitle: string;
+
   exercises: LessonBuilderExercise[];
+
   initialBlocks: InitialLessonBlock[];
+
   initialUnblockedExercises: InitialUnblockedExercise[];
+
   reusableBlocks: ReusableLessonBlock[];
+
   favouriteExerciseIds: string[];
 }
 
 type ExerciseDestination = string | "unblocked";
 
-type DragDropProps = ComponentProps<typeof DragDropProvider>;
-
-interface DragItem {
-  id: string;
-}
-
-type DragGroups = Record<string, DragItem[]>;
-
 export function LessonBuilder({
   lessonId,
+
   lessonTitle,
+
   exercises,
+
   initialBlocks,
+
   initialUnblockedExercises,
+
   reusableBlocks: initialReusableBlocks,
+
   favouriteExerciseIds,
 }: LessonBuilderProps) {
   const router = useRouter();
 
   const keyCounter = useRef(0);
+
   const newItemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
   const itemToScrollTo = useRef<string | null>(null);
-  const dragSnapshot = useRef<LessonItem[] | null>(null);
 
   function createKey(prefix: string) {
     keyCounter.current += 1;
+
     return `${prefix}-${keyCounter.current}`;
   }
 
@@ -144,6 +174,7 @@ export function LessonBuilder({
   const [lessonItems, setLessonItems] = useState<LessonItem[]>(() => {
     const positionedItems: {
       position: number;
+
       item: LessonItem;
     }[] = [];
 
@@ -152,17 +183,26 @@ export function LessonBuilder({
 
       positionedItems.push({
         position: block.position,
+
         item: {
           type: "block",
+
           key,
+
           block: {
             key,
+
             name: block.name,
+
             exercises: [...block.lesson_exercises]
+
               .sort((a, b) => a.position - b.position)
+
               .map((lessonExercise) => ({
                 key: `existing-exercise-${lessonExercise.id}`,
+
                 exerciseId: lessonExercise.exercise_id,
+
                 variantId: lessonExercise.variant_id,
               })),
           },
@@ -175,12 +215,17 @@ export function LessonBuilder({
 
       positionedItems.push({
         position: exercise.position,
+
         item: {
           type: "exercise",
+
           key,
+
           exercise: {
             key,
+
             exerciseId: exercise.exercise_id,
+
             variantId: exercise.variant_id,
           },
         },
@@ -188,13 +233,16 @@ export function LessonBuilder({
     });
 
     return positionedItems
+
       .sort((a, b) => a.position - b.position)
+
       .map((entry) => entry.item);
   });
 
   const [reusableBlocks, setReusableBlocks] = useState(initialReusableBlocks);
 
   const [exerciseModalOpen, setExerciseModalOpen] = useState(false);
+
   const [reusableModalOpen, setReusableModalOpen] = useState(false);
 
   const [destination, setDestination] =
@@ -203,20 +251,29 @@ export function LessonBuilder({
   const [checkedExerciseIds, setCheckedExerciseIds] = useState<string[]>([]);
 
   const [search, setSearch] = useState("");
+
   const [minAge, setMinAge] = useState("");
+
   const [maxAge, setMaxAge] = useState("");
+
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+
   const [showOnlyFavourites, setShowOnlyFavourites] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
+
   const [isDeleting, setIsDeleting] = useState(false);
+
   const [message, setMessage] = useState<string | null>(null);
 
   const blocks = useMemo(
     () =>
       lessonItems
+
         .filter((item): item is BlockLessonItem => item.type === "block")
+
         .map((item) => item.block),
+
     [lessonItems],
   );
 
@@ -229,6 +286,7 @@ export function LessonBuilder({
 
         return total + item.block.exercises.length;
       }, 0),
+
     [lessonItems],
   );
 
@@ -247,6 +305,7 @@ export function LessonBuilder({
 
     element.scrollIntoView({
       behavior: "smooth",
+
       block: "center",
     });
 
@@ -271,6 +330,7 @@ export function LessonBuilder({
     const normalizedSearch = search.trim().toLocaleLowerCase("it");
 
     const parsedMinAge = minAge === "" ? 0 : Number(minAge);
+
     const parsedMaxAge = maxAge === "" ? 99 : Number(maxAge);
 
     return exercises.filter((exercise) => {
@@ -278,7 +338,9 @@ export function LessonBuilder({
         normalizedSearch.length === 0 ||
         exercise.name.toLocaleLowerCase("it").includes(normalizedSearch) ||
         exercise.description
+
           ?.toLocaleLowerCase("it")
+
           .includes(normalizedSearch);
 
       if (!matchesSearch) {
@@ -305,11 +367,17 @@ export function LessonBuilder({
     });
   }, [
     exercises,
+
     search,
+
     minAge,
+
     maxAge,
+
     selectedTagIds,
+
     showOnlyFavourites,
+
     favouriteExerciseIds,
   ]);
 
@@ -319,12 +387,15 @@ export function LessonBuilder({
 
   function openExerciseModal(target: ExerciseDestination) {
     setDestination(target);
+
     resetExerciseSelection();
+
     setExerciseModalOpen(true);
   }
 
   function closeExerciseModal() {
     setExerciseModalOpen(false);
+
     resetExerciseSelection();
   }
 
@@ -338,9 +409,13 @@ export function LessonBuilder({
 
   function clearFilters() {
     setSearch("");
+
     setMinAge("");
+
     setMaxAge("");
+
     setSelectedTagIds([]);
+
     setShowOnlyFavourites(false);
   }
 
@@ -351,12 +426,17 @@ export function LessonBuilder({
 
     setLessonItems((current) => [
       ...current,
+
       {
         type: "block",
+
         key,
+
         block: {
           key,
+
           name: "Nuovo blocco",
+
           exercises: [],
         },
       },
@@ -374,8 +454,10 @@ export function LessonBuilder({
 
         return {
           ...item,
+
           block: {
             ...item.block,
+
             name,
           },
         };
@@ -408,11 +490,14 @@ export function LessonBuilder({
 
   function addExerciseToDestination(
     exerciseId: string,
+
     target: ExerciseDestination,
   ) {
     const selectedExercise: SelectedExercise = {
       key: createKey("exercise"),
+
       exerciseId,
+
       variantId: null,
     };
 
@@ -420,9 +505,12 @@ export function LessonBuilder({
       if (target === "unblocked") {
         return [
           ...current,
+
           {
             type: "exercise",
+
             key: selectedExercise.key,
+
             exercise: selectedExercise,
           },
         ];
@@ -435,8 +523,10 @@ export function LessonBuilder({
 
         return {
           ...item,
+
           block: {
             ...item.block,
+
             exercises: [...item.block.exercises, selectedExercise],
           },
         };
@@ -446,7 +536,9 @@ export function LessonBuilder({
 
   function quickAddExercise(exerciseId: string) {
     addExerciseToDestination(exerciseId, destination);
+
     closeExerciseModal();
+
     setMessage(null);
   }
 
@@ -456,17 +548,22 @@ export function LessonBuilder({
     setLessonItems((current) => {
       const selectedExercises = exerciseIds.map((exerciseId) => ({
         key: createKey("exercise"),
+
         exerciseId,
+
         variantId: null,
       }));
 
       if (destination === "unblocked") {
         return [
           ...current,
+
           ...selectedExercises.map(
             (exercise): ExerciseLessonItem => ({
               type: "exercise",
+
               key: exercise.key,
+
               exercise,
             }),
           ),
@@ -480,8 +577,10 @@ export function LessonBuilder({
 
         return {
           ...item,
+
           block: {
             ...item.block,
+
             exercises: [...item.block.exercises, ...selectedExercises],
           },
         };
@@ -489,6 +588,7 @@ export function LessonBuilder({
     });
 
     closeExerciseModal();
+
     setMessage(null);
   }
 
@@ -514,8 +614,10 @@ export function LessonBuilder({
 
         return {
           ...item,
+
           block: {
             ...item.block,
+
             exercises: item.block.exercises.filter(
               (exercise) => exercise.key !== exerciseKey,
             ),
@@ -535,8 +637,10 @@ export function LessonBuilder({
 
           return {
             ...item,
+
             exercise: {
               ...item.exercise,
+
               variantId: variantId || null,
             },
           };
@@ -544,12 +648,15 @@ export function LessonBuilder({
 
         return {
           ...item,
+
           block: {
             ...item.block,
+
             exercises: item.block.exercises.map((exercise) =>
               exercise.key === exerciseKey
                 ? {
                     ...exercise,
+
                     variantId: variantId || null,
                   }
                 : exercise,
@@ -560,141 +667,168 @@ export function LessonBuilder({
     );
   }
 
-  function toDragGroups(items: LessonItem[]): DragGroups {
-    const groups: DragGroups = {
-      "lesson-top": items.map((item) => ({
-        id: item.key,
-      })),
-    };
+  function moveTopLevelItem(itemKey: string, direction: -1 | 1) {
+    setLessonItems((current) => {
+      const index = current.findIndex((item) => item.key === itemKey);
 
-    items.forEach((item) => {
-      if (item.type === "block") {
-        groups[item.key] = item.block.exercises.map((exercise) => ({
-          id: exercise.key,
-        }));
+      if (index < 0) {
+        return current;
       }
-    });
 
-    return groups;
+      const newIndex = index + direction;
+
+      if (newIndex < 0 || newIndex >= current.length) {
+        return current;
+      }
+
+      const reordered = [...current];
+      const [moved] = reordered.splice(index, 1);
+      reordered.splice(newIndex, 0, moved);
+
+      return reordered;
+    });
   }
 
-  function applyDragGroups(
-    items: LessonItem[],
-    groups: DragGroups,
-  ): LessonItem[] {
-    const blocksByKey = new Map<string, BlockLessonItem>();
-    const exercisesByKey = new Map<string, SelectedExercise>();
+  function moveBlockExercise(
+    blockKey: string,
+    exerciseKey: string,
+    direction: -1 | 1,
+  ) {
+    setLessonItems((current) =>
+      current.map((item) => {
+        if (item.type !== "block" || item.key !== blockKey) {
+          return item;
+        }
 
-    items.forEach((item) => {
-      if (item.type === "block") {
-        blocksByKey.set(item.key, item);
+        const index = item.block.exercises.findIndex(
+          (exercise) => exercise.key === exerciseKey,
+        );
 
-        item.block.exercises.forEach((exercise) => {
-          exercisesByKey.set(exercise.key, exercise);
-        });
-      } else {
-        exercisesByKey.set(item.exercise.key, item.exercise);
-      }
-    });
+        if (index < 0) {
+          return item;
+        }
 
-    const result: LessonItem[] = [];
+        const newIndex = index + direction;
 
-    for (const dragItem of groups["lesson-top"] ?? []) {
-      const block = blocksByKey.get(dragItem.id);
+        if (newIndex < 0 || newIndex >= item.block.exercises.length) {
+          return item;
+        }
 
-      if (block) {
-        const blockExerciseKeys = groups[block.key] ?? [];
+        const reordered = [...item.block.exercises];
+        const [moved] = reordered.splice(index, 1);
+        reordered.splice(newIndex, 0, moved);
 
-        result.push({
-          ...block,
+        return {
+          ...item,
           block: {
-            ...block.block,
-            exercises: blockExerciseKeys
-              .map((entry) => exercisesByKey.get(entry.id))
-              .filter(
-                (exercise): exercise is SelectedExercise =>
-                  exercise !== undefined,
-              ),
+            ...item.block,
+            exercises: reordered,
           },
-        });
+        };
+      }),
+    );
+  }
 
-        continue;
+  function changeExerciseDestination(
+    exerciseKey: string,
+    target: ExerciseDestination,
+  ) {
+    setLessonItems((current) => {
+      let selectedExercise: SelectedExercise | null = null;
+      let sourceBlockKey: string | null = null;
+
+      for (const item of current) {
+        if (item.type === "exercise" && item.exercise.key === exerciseKey) {
+          selectedExercise = item.exercise;
+          break;
+        }
+
+        if (item.type === "block") {
+          const exercise = item.block.exercises.find(
+            (candidate) => candidate.key === exerciseKey,
+          );
+
+          if (exercise) {
+            selectedExercise = exercise;
+            sourceBlockKey = item.key;
+            break;
+          }
+        }
       }
 
-      const exercise = exercisesByKey.get(dragItem.id);
+      if (!selectedExercise) {
+        return current;
+      }
 
-      if (exercise) {
-        result.push({
+      if (target === "unblocked" && sourceBlockKey === null) {
+        return current;
+      }
+
+      if (target !== "unblocked" && target === sourceBlockKey) {
+        return current;
+      }
+
+      const withoutExercise = current
+        .filter(
+          (item) =>
+            !(item.type === "exercise" && item.exercise.key === exerciseKey),
+        )
+        .map((item) => {
+          if (item.type !== "block") {
+            return item;
+          }
+
+          return {
+            ...item,
+            block: {
+              ...item.block,
+              exercises: item.block.exercises.filter(
+                (exercise) => exercise.key !== exerciseKey,
+              ),
+            },
+          };
+        });
+
+      if (target === "unblocked") {
+        const sourceBlockIndex = withoutExercise.findIndex(
+          (item) => item.type === "block" && item.key === sourceBlockKey,
+        );
+
+        const insertionIndex =
+          sourceBlockIndex >= 0 ? sourceBlockIndex + 1 : withoutExercise.length;
+
+        const next = [...withoutExercise];
+        next.splice(insertionIndex, 0, {
           type: "exercise",
-          key: exercise.key,
-          exercise,
+          key: selectedExercise.key,
+          exercise: selectedExercise,
         });
-      }
-    }
 
-    return result;
-  }
-
-  function handleDragStart() {
-    dragSnapshot.current = lessonItems;
-  }
-
-  const handleDragOver: NonNullable<DragDropProps["onDragOver"]> = (event) => {
-    const source = event.operation.source;
-
-    if (!source || source.type === "block") {
-      return;
-    }
-
-    setLessonItems((current) => {
-      const groups = toDragGroups(current);
-      const movedGroups = move(groups, event) as DragGroups;
-
-      return applyDragGroups(current, movedGroups);
-    });
-  };
-
-  const handleDragEnd: NonNullable<DragDropProps["onDragEnd"]> = (event) => {
-    if (event.canceled) {
-      if (dragSnapshot.current) {
-        setLessonItems(dragSnapshot.current);
+        return next;
       }
 
-      dragSnapshot.current = null;
-      return;
-    }
+      return withoutExercise.map((item) => {
+        if (item.type !== "block" || item.key !== target) {
+          return item;
+        }
 
-    const source = event.operation.source;
-
-    if (!source) {
-      dragSnapshot.current = null;
-      return;
-    }
-
-    if (source.type === "exercise") {
-      dragSnapshot.current = null;
-      return;
-    }
-
-    setLessonItems((current) => {
-      const groups = toDragGroups(current);
-
-      const movedTopLevel = move(groups["lesson-top"], event) as DragItem[];
-
-      return applyDragGroups(current, {
-        ...groups,
-        "lesson-top": movedTopLevel,
+        return {
+          ...item,
+          block: {
+            ...item.block,
+            exercises: [...item.block.exercises, selectedExercise],
+          },
+        };
       });
     });
-
-    dragSnapshot.current = null;
-  };
+  }
 
   async function saveBlockAsReusable(block: LessonBlock) {
     const name = block.name.trim();
 
     if (!name) {
       setMessage("Il blocco deve avere un nome.");
+
       return;
     }
 
@@ -706,56 +840,78 @@ export function LessonBuilder({
 
     if (!user) {
       setMessage("Sessione non valida.");
+
       return;
     }
 
     const { data: savedBlock, error } = await supabase
+
       .from("reusable_lesson_blocks")
+
       .insert({
         user_id: user.id,
+
         name,
       })
+
       .select("id, name")
+
       .single();
 
     if (error || !savedBlock) {
       setMessage("Errore durante il salvataggio del blocco.");
+
       return;
     }
 
     if (block.exercises.length > 0) {
       const rows = block.exercises.map((exercise, position) => ({
         reusable_lesson_block_id: savedBlock.id,
+
         exercise_id: exercise.exerciseId,
+
         variant_id: exercise.variantId,
+
         position,
       }));
 
       const { error: exercisesError } = await supabase
+
         .from("reusable_lesson_block_exercises")
+
         .insert(rows);
 
       if (exercisesError) {
         await supabase
+
           .from("reusable_lesson_blocks")
+
           .delete()
+
           .eq("id", savedBlock.id);
 
         setMessage("Errore durante il salvataggio del blocco.");
+
         return;
       }
     }
 
     setReusableBlocks((current) => [
       ...current,
+
       {
         id: savedBlock.id,
+
         name,
+
         reusable_lesson_block_exercises: block.exercises.map(
           (exercise, position) => ({
             id: createKey("local-reusable"),
+
             exercise_id: exercise.exerciseId,
+
             variant_id: exercise.variantId,
+
             position,
           }),
         ),
@@ -772,17 +928,26 @@ export function LessonBuilder({
 
     setLessonItems((current) => [
       ...current,
+
       {
         type: "block",
+
         key,
+
         block: {
           key,
+
           name: block.name,
+
           exercises: [...block.reusable_lesson_block_exercises]
+
             .sort((a, b) => a.position - b.position)
+
             .map((exercise) => ({
               key: createKey("reusable-exercise"),
+
               exerciseId: exercise.exercise_id,
+
               variantId: exercise.variant_id,
             })),
         },
@@ -804,12 +969,16 @@ export function LessonBuilder({
     const supabase = createClient();
 
     const { error } = await supabase
+
       .from("reusable_lesson_blocks")
+
       .delete()
+
       .eq("id", block.id);
 
     if (error) {
       setMessage("Errore durante l'eliminazione del blocco.");
+
       return;
     }
 
@@ -823,6 +992,7 @@ export function LessonBuilder({
 
     if (!trimmedTitle) {
       setMessage("Inserisci un titolo per la lezione.");
+
       return;
     }
 
@@ -832,47 +1002,65 @@ export function LessonBuilder({
 
     if (currentBlocks.some((item) => !item.block.name.trim())) {
       setMessage("Tutti i blocchi devono avere un nome.");
+
       return;
     }
 
     setIsSaving(true);
+
     setMessage(null);
 
     const supabase = createClient();
 
     const { error: lessonError } = await supabase
+
       .from("lessons")
+
       .update({
         title: trimmedTitle,
+
         updated_at: new Date().toISOString(),
       })
+
       .eq("id", lessonId);
 
     if (lessonError) {
       setMessage("Errore durante il salvataggio della lezione.");
+
       setIsSaving(false);
+
       return;
     }
 
     const { error: deleteExercisesError } = await supabase
+
       .from("lesson_exercises")
+
       .delete()
+
       .eq("lesson_id", lessonId);
 
     if (deleteExercisesError) {
       setMessage("Errore durante il salvataggio degli esercizi.");
+
       setIsSaving(false);
+
       return;
     }
 
     const { error: deleteBlocksError } = await supabase
+
       .from("lesson_blocks")
+
       .delete()
+
       .eq("lesson_id", lessonId);
 
     if (deleteBlocksError) {
       setMessage("Errore durante il salvataggio dei blocchi.");
+
       setIsSaving(false);
+
       return;
     }
 
@@ -886,16 +1074,23 @@ export function LessonBuilder({
       if (item.type === "exercise") {
         const { error } = await supabase.from("lesson_exercises").insert({
           lesson_id: lessonId,
+
           lesson_block_id: null,
+
           exercise_id: item.exercise.exerciseId,
+
           variant_id: item.exercise.variantId,
+
           position: 0,
+
           lesson_position: topLevelPosition,
         });
 
         if (error) {
           setMessage("Errore durante il salvataggio degli esercizi.");
+
           setIsSaving(false);
+
           return;
         }
 
@@ -903,18 +1098,26 @@ export function LessonBuilder({
       }
 
       const { data: insertedBlock, error: blockError } = await supabase
+
         .from("lesson_blocks")
+
         .insert({
           lesson_id: lessonId,
+
           name: item.block.name.trim(),
+
           position: topLevelPosition,
         })
+
         .select("id")
+
         .single();
 
       if (blockError || !insertedBlock) {
         setMessage("Errore durante il salvataggio dei blocchi.");
+
         setIsSaving(false);
+
         return;
       }
 
@@ -924,10 +1127,15 @@ export function LessonBuilder({
 
       const rows = item.block.exercises.map((exercise, position) => ({
         lesson_id: lessonId,
+
         lesson_block_id: insertedBlock.id,
+
         exercise_id: exercise.exerciseId,
+
         variant_id: exercise.variantId,
+
         position,
+
         lesson_position: null,
       }));
 
@@ -935,13 +1143,17 @@ export function LessonBuilder({
 
       if (error) {
         setMessage("Errore durante il salvataggio degli esercizi.");
+
         setIsSaving(false);
+
         return;
       }
     }
 
     setTitle(trimmedTitle);
+
     setMessage("Lezione salvata.");
+
     setIsSaving(false);
 
     router.refresh();
@@ -957,17 +1169,23 @@ export function LessonBuilder({
     const supabase = createClient();
 
     const { error } = await supabase
+
       .from("lessons")
+
       .delete()
+
       .eq("id", lessonId);
 
     if (error) {
       setMessage("Errore durante l'eliminazione della lezione.");
+
       setIsDeleting(false);
+
       return;
     }
 
     router.push("/protected/lessons");
+
     router.refresh();
   }
 
@@ -1009,6 +1227,7 @@ export function LessonBuilder({
         >
           <span>
             <span className="block font-semibold">Esercizi</span>
+
             <span className="mt-1 block text-sm text-muted-foreground">
               Cerca e aggiungi esercizi alla lezione
             </span>
@@ -1024,6 +1243,7 @@ export function LessonBuilder({
         >
           <span>
             <span className="block font-semibold">Blocchi salvati</span>
+
             <span className="mt-1 block text-sm text-muted-foreground">
               Riutilizza o elimina i tuoi blocchi
             </span>
@@ -1038,7 +1258,7 @@ export function LessonBuilder({
           <div>
             <h2 className="font-semibold">Struttura della lezione</h2>
             <p className="text-sm text-muted-foreground">
-              Trascina blocchi ed esercizi per organizzare la lezione.
+              Usa le frecce per ordinare blocchi ed esercizi.
             </p>
           </div>
 
@@ -1047,77 +1267,181 @@ export function LessonBuilder({
           </Button>
         </div>
 
-        <DragDropProvider
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="min-h-20">
-            {lessonItems.length === 0 ? (
-              <div className="rounded-xl border border-dashed p-6 text-center">
-                <p className="text-sm text-muted-foreground">
-                  La lezione è vuota. Aggiungi un esercizio o un blocco.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {lessonItems.map((item, index) => {
-                  if (item.type === "exercise") {
-                    const exercise = exercises.find(
-                      (candidate) => candidate.id === item.exercise.exerciseId,
-                    );
-
-                    if (!exercise) {
-                      return null;
-                    }
-
-                    return (
-                      <div
-                        key={item.key}
-                        ref={(element) => {
-                          newItemRefs.current[item.key] = element;
-                        }}
-                      >
-                        <SortableTopExercise
-                          item={item}
-                          index={index}
-                          exercise={exercise}
-                          onRemove={() => removeExercise(item.exercise.key)}
-                          onVariantChange={(variantId) =>
-                            updateExerciseVariant(item.exercise.key, variantId)
-                          }
-                        />
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div
-                      key={item.key}
-                      ref={(element) => {
-                        newItemRefs.current[item.key] = element;
-                      }}
-                    >
-                      <SortableBlock
-                        item={item}
-                        index={index}
-                        exercises={exercises}
-                        onRename={(name) => renameBlock(item.key, name)}
-                        onRemove={() => removeBlock(item.key)}
-                        onSaveReusable={() =>
-                          void saveBlockAsReusable(item.block)
-                        }
-                        onAddExercise={() => openExerciseModal(item.key)}
-                        onRemoveExercise={removeExercise}
-                        onVariantChange={updateExerciseVariant}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+        {lessonItems.length === 0 ? (
+          <div className="rounded-xl border border-dashed p-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              La lezione è vuota. Aggiungi un esercizio o un blocco.
+            </p>
           </div>
-        </DragDropProvider>
+        ) : (
+          <div className="space-y-3">
+            {lessonItems.map((item, index) => {
+              if (item.type === "exercise") {
+                const exercise = exercises.find(
+                  (candidate) => candidate.id === item.exercise.exerciseId,
+                );
+
+                if (!exercise) {
+                  return null;
+                }
+
+                return (
+                  <div
+                    key={item.key}
+                    ref={(element) => {
+                      newItemRefs.current[item.key] = element;
+                    }}
+                    className="rounded-xl border border-sky-200 bg-sky-50/70 p-1 shadow-sm"
+                  >
+                    <ExerciseRow
+                      exercise={exercise}
+                      selectedExercise={item.exercise}
+                      blocks={blocks}
+                      destination="unblocked"
+                      canMoveUp={index > 0}
+                      canMoveDown={index < lessonItems.length - 1}
+                      onMoveUp={() => moveTopLevelItem(item.key, -1)}
+                      onMoveDown={() => moveTopLevelItem(item.key, 1)}
+                      onDestinationChange={(target) =>
+                        changeExerciseDestination(item.exercise.key, target)
+                      }
+                      onRemove={() => removeExercise(item.exercise.key)}
+                      onVariantChange={(variantId) =>
+                        updateExerciseVariant(item.exercise.key, variantId)
+                      }
+                    />
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={item.key}
+                  ref={(element) => {
+                    newItemRefs.current[item.key] = element;
+                  }}
+                  className="overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50/30 shadow-sm"
+                >
+                  <div className="flex flex-wrap items-center gap-2 border-b border-emerald-200 bg-emerald-100/70 p-3">
+                    <MoveButtons
+                      canMoveUp={index > 0}
+                      canMoveDown={index < lessonItems.length - 1}
+                      onMoveUp={() => moveTopLevelItem(item.key, -1)}
+                      onMoveDown={() => moveTopLevelItem(item.key, 1)}
+                      upLabel={`Sposta il blocco ${item.block.name} in alto`}
+                      downLabel={`Sposta il blocco ${item.block.name} in basso`}
+                    />
+
+                    <Input
+                      value={item.block.name}
+                      onChange={(event) =>
+                        renameBlock(item.key, event.target.value)
+                      }
+                      className="min-w-48 flex-1 font-semibold"
+                      aria-label="Nome del blocco"
+                    />
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void saveBlockAsReusable(item.block)}
+                    >
+                      Salva blocco
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeBlock(item.key)}
+                    >
+                      Rimuovi
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2 p-3">
+                    {item.block.exercises.length === 0 ? (
+                      <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+                        Nessun esercizio nel blocco.
+                      </p>
+                    ) : (
+                      item.block.exercises.map(
+                        (selectedExercise, exerciseIndex) => {
+                          const exercise = exercises.find(
+                            (candidate) =>
+                              candidate.id === selectedExercise.exerciseId,
+                          );
+
+                          if (!exercise) {
+                            return null;
+                          }
+
+                          return (
+                            <div
+                              key={selectedExercise.key}
+                              className="rounded-lg border bg-background"
+                            >
+                              <ExerciseRow
+                                exercise={exercise}
+                                selectedExercise={selectedExercise}
+                                blocks={blocks}
+                                destination={item.key}
+                                canMoveUp={exerciseIndex > 0}
+                                canMoveDown={
+                                  exerciseIndex <
+                                  item.block.exercises.length - 1
+                                }
+                                onMoveUp={() =>
+                                  moveBlockExercise(
+                                    item.key,
+                                    selectedExercise.key,
+                                    -1,
+                                  )
+                                }
+                                onMoveDown={() =>
+                                  moveBlockExercise(
+                                    item.key,
+                                    selectedExercise.key,
+                                    1,
+                                  )
+                                }
+                                onDestinationChange={(target) =>
+                                  changeExerciseDestination(
+                                    selectedExercise.key,
+                                    target,
+                                  )
+                                }
+                                onRemove={() =>
+                                  removeExercise(selectedExercise.key)
+                                }
+                                onVariantChange={(variantId) =>
+                                  updateExerciseVariant(
+                                    selectedExercise.key,
+                                    variantId,
+                                  )
+                                }
+                              />
+                            </div>
+                          );
+                        },
+                      )
+                    )}
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openExerciseModal(item.key)}
+                    >
+                      + Aggiungi esercizio
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {message && <p className="text-sm text-muted-foreground">{message}</p>}
@@ -1402,6 +1726,7 @@ export function LessonBuilder({
                   >
                     <div>
                       <p className="font-medium">{block.name}</p>
+
                       <p className="text-xs text-muted-foreground">
                         {block.reusable_lesson_block_exercises.length} esercizi
                       </p>
@@ -1436,228 +1761,46 @@ export function LessonBuilder({
   );
 }
 
-interface SortableTopExerciseProps {
-  item: ExerciseLessonItem;
-  index: number;
-  exercise: LessonBuilderExercise;
-  onRemove: () => void;
-  onVariantChange: (variantId: string) => void;
+interface MoveButtonsProps {
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  upLabel: string;
+  downLabel: string;
 }
 
-function SortableTopExercise({
-  item,
-  index,
-  exercise,
-  onRemove,
-  onVariantChange,
-}: SortableTopExerciseProps) {
-  const sortable = useSortable({
-    id: item.key,
-    index,
-    group: "lesson-top",
-    type: "exercise",
-    accept: ["exercise", "block"],
-  });
-
+function MoveButtons({
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
+  upLabel,
+  downLabel,
+}: MoveButtonsProps) {
   return (
-    <div
-      ref={sortable.ref}
-      className={`rounded-xl border bg-card p-1 transition ${
-        sortable.isDragging ? "opacity-50" : ""
-      } ${sortable.isDropTarget ? "ring-2 ring-primary/40" : ""}`}
-    >
-      <ExerciseRow
-        exercise={exercise}
-        selectedExercise={item.exercise}
-        dragHandleRef={sortable.handleRef}
-        onRemove={onRemove}
-        onVariantChange={onVariantChange}
-      />
-    </div>
-  );
-}
+    <div className="flex shrink-0 flex-col overflow-hidden rounded-md border bg-background">
+      <button
+        type="button"
+        disabled={!canMoveUp}
+        onClick={onMoveUp}
+        className="flex h-7 w-8 cursor-pointer items-center justify-center text-xs hover:bg-muted disabled:cursor-default disabled:opacity-25"
+        aria-label={upLabel}
+        title={upLabel}
+      >
+        ▲
+      </button>
 
-interface SortableBlockProps {
-  item: BlockLessonItem;
-  index: number;
-  exercises: LessonBuilderExercise[];
-  onRename: (name: string) => void;
-  onRemove: () => void;
-  onSaveReusable: () => void;
-  onAddExercise: () => void;
-  onRemoveExercise: (exerciseKey: string) => void;
-  onVariantChange: (exerciseKey: string, variantId: string) => void;
-}
-
-function SortableBlock({
-  item,
-  index,
-  exercises,
-  onRename,
-  onRemove,
-  onSaveReusable,
-  onAddExercise,
-  onRemoveExercise,
-  onVariantChange,
-}: SortableBlockProps) {
-  const sortable = useSortable({
-    id: item.key,
-    index,
-    group: "lesson-top",
-    type: "block",
-    accept: "block",
-  });
-
-  return (
-    <div
-      ref={sortable.ref}
-      className={`rounded-xl border bg-muted/20 transition ${
-        sortable.isDragging ? "opacity-50" : ""
-      } ${sortable.isDropTarget ? "ring-2 ring-primary/40" : ""}`}
-    >
-      <div className="flex flex-wrap items-center gap-2 border-b p-3">
-        <button
-          ref={sortable.handleRef}
-          type="button"
-          className="flex h-9 w-9 shrink-0 cursor-grab touch-none items-center justify-center rounded-md border bg-background text-lg text-muted-foreground active:cursor-grabbing"
-          aria-label={`Trascina il blocco ${item.block.name}`}
-          title="Trascina blocco"
-        >
-          ⠿
-        </button>
-
-        <Input
-          value={item.block.name}
-          onChange={(event) => onRename(event.target.value)}
-          className="min-w-48 flex-1 font-semibold"
-          aria-label="Nome del blocco"
-        />
-
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onSaveReusable}
-        >
-          Salva blocco
-        </Button>
-
-        <Button type="button" variant="ghost" size="sm" onClick={onRemove}>
-          Rimuovi
-        </Button>
-      </div>
-
-      <BlockExerciseDropZone blockKey={item.key}>
-        <div className="space-y-2 p-3">
-          {item.block.exercises.length === 0 ? (
-            <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-              Trascina qui un esercizio oppure aggiungine uno.
-            </p>
-          ) : (
-            item.block.exercises.map((selectedExercise, exerciseIndex) => {
-              const exercise = exercises.find(
-                (candidate) => candidate.id === selectedExercise.exerciseId,
-              );
-
-              if (!exercise) {
-                return null;
-              }
-
-              return (
-                <SortableBlockExercise
-                  key={selectedExercise.key}
-                  blockKey={item.key}
-                  selectedExercise={selectedExercise}
-                  exercise={exercise}
-                  index={exerciseIndex}
-                  onRemove={() => onRemoveExercise(selectedExercise.key)}
-                  onVariantChange={(variantId) =>
-                    onVariantChange(selectedExercise.key, variantId)
-                  }
-                />
-              );
-            })
-          )}
-
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onAddExercise}
-          >
-            + Aggiungi esercizio
-          </Button>
-        </div>
-      </BlockExerciseDropZone>
-    </div>
-  );
-}
-
-interface BlockExerciseDropZoneProps {
-  blockKey: string;
-  children: ReactNode;
-}
-
-function BlockExerciseDropZone({
-  blockKey,
-  children,
-}: BlockExerciseDropZoneProps) {
-  const { ref, isDropTarget } = useDroppable({
-    id: blockKey,
-    accept: "exercise",
-    collisionPriority: -10,
-  });
-
-  return (
-    <div
-      ref={ref}
-      className={`min-h-20 transition ${isDropTarget ? "bg-muted/50" : ""}`}
-    >
-      {children}
-    </div>
-  );
-}
-
-interface SortableBlockExerciseProps {
-  blockKey: string;
-  selectedExercise: SelectedExercise;
-  exercise: LessonBuilderExercise;
-  index: number;
-  onRemove: () => void;
-  onVariantChange: (variantId: string) => void;
-}
-
-function SortableBlockExercise({
-  blockKey,
-  selectedExercise,
-  exercise,
-  index,
-  onRemove,
-  onVariantChange,
-}: SortableBlockExerciseProps) {
-  const sortable = useSortable({
-    id: selectedExercise.key,
-    index,
-    group: blockKey,
-    type: "exercise",
-    accept: "exercise",
-    collisionPriority: 1,
-  });
-
-  return (
-    <div
-      ref={sortable.ref}
-      className={`rounded-lg border bg-background transition ${
-        sortable.isDragging ? "opacity-50" : ""
-      } ${sortable.isDropTarget ? "ring-2 ring-primary/40" : ""}`}
-    >
-      <ExerciseRow
-        exercise={exercise}
-        selectedExercise={selectedExercise}
-        dragHandleRef={sortable.handleRef}
-        onRemove={onRemove}
-        onVariantChange={onVariantChange}
-      />
+      <button
+        type="button"
+        disabled={!canMoveDown}
+        onClick={onMoveDown}
+        className="flex h-7 w-8 cursor-pointer items-center justify-center border-t text-xs hover:bg-muted disabled:cursor-default disabled:opacity-25"
+        aria-label={downLabel}
+        title={downLabel}
+      >
+        ▼
+      </button>
     </div>
   );
 }
@@ -1665,7 +1808,13 @@ function SortableBlockExercise({
 interface ExerciseRowProps {
   exercise: LessonBuilderExercise;
   selectedExercise: SelectedExercise;
-  dragHandleRef?: (element: Element | null) => void;
+  blocks: LessonBlock[];
+  destination: ExerciseDestination;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onDestinationChange: (target: ExerciseDestination) => void;
   onRemove: () => void;
   onVariantChange: (variantId: string) => void;
 }
@@ -1673,31 +1822,54 @@ interface ExerciseRowProps {
 function ExerciseRow({
   exercise,
   selectedExercise,
-  dragHandleRef,
+  blocks,
+  destination,
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
+  onDestinationChange,
   onRemove,
   onVariantChange,
 }: ExerciseRowProps) {
   return (
     <div className="rounded-lg bg-background px-3 py-2">
       <div className="flex items-center gap-2">
-        <button
-          ref={dragHandleRef}
-          type="button"
-          className="flex h-8 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-md border text-base text-muted-foreground active:cursor-grabbing"
-          aria-label={`Trascina ${exercise.name}`}
-          title="Trascina esercizio"
-        >
-          ⠿
-        </button>
+        <MoveButtons
+          canMoveUp={canMoveUp}
+          canMoveDown={canMoveDown}
+          onMoveUp={onMoveUp}
+          onMoveDown={onMoveDown}
+          upLabel={`Sposta ${exercise.name} in alto`}
+          downLabel={`Sposta ${exercise.name} in basso`}
+        />
 
         <span className="min-w-0 flex-1 text-sm font-medium">
           {exercise.name}
         </span>
 
+        <select
+          value={destination}
+          onChange={(event) =>
+            onDestinationChange(event.target.value as ExerciseDestination)
+          }
+          className="max-w-44 cursor-pointer rounded-md border bg-background px-2 py-1.5 text-xs"
+          aria-label={`Destinazione di ${exercise.name}`}
+          title="Sposta esercizio"
+        >
+          <option value="unblocked">Fuori dai blocchi</option>
+
+          {blocks.map((block) => (
+            <option key={block.key} value={block.key}>
+              {block.name}
+            </option>
+          ))}
+        </select>
+
         <button
           type="button"
           onClick={onRemove}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-lg text-muted-foreground hover:text-foreground"
+          className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border text-lg text-muted-foreground hover:text-foreground"
           aria-label={`Rimuovi ${exercise.name}`}
           title="Rimuovi dalla lezione"
         >
@@ -1709,7 +1881,7 @@ function ExerciseRow({
         <select
           value={selectedExercise.variantId ?? ""}
           onChange={(event) => onVariantChange(event.target.value)}
-          className="mt-2 w-full rounded-md border bg-background px-2 py-2 text-sm"
+          className="mt-2 w-full cursor-pointer rounded-md border bg-background px-2 py-2 text-sm"
           aria-label={`Variante di ${exercise.name}`}
         >
           <option value="">Nessuna variante</option>
