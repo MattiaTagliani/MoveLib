@@ -266,6 +266,24 @@ export function LessonBuilder({
 
   const [message, setMessage] = useState<string | null>(null);
 
+  const [collapsedItemKeys, setCollapsedItemKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
+
+  function toggleCollapsed(itemKey: string) {
+    setCollapsedItemKeys((current) => {
+      const next = new Set(current);
+
+      if (next.has(itemKey)) {
+        next.delete(itemKey);
+      } else {
+        next.add(itemKey);
+      }
+
+      return next;
+    });
+  }
+
   const blocks = useMemo(
     () =>
       lessonItems
@@ -1253,8 +1271,8 @@ export function LessonBuilder({
         </button>
       </section>
 
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+      <section className="space-y-2">
+        <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
             <h2 className="font-semibold">Struttura della lezione</h2>
             <p className="text-sm text-muted-foreground">
@@ -1262,20 +1280,22 @@ export function LessonBuilder({
             </p>
           </div>
 
-          <Button type="button" variant="outline" onClick={addBlock}>
+          <Button type="button" variant="outline" size="sm" onClick={addBlock}>
             + Nuovo blocco
           </Button>
         </div>
 
         {lessonItems.length === 0 ? (
-          <div className="rounded-xl border border-dashed p-6 text-center">
+          <div className="rounded-lg border border-dashed px-4 py-5 text-center">
             <p className="text-sm text-muted-foreground">
               La lezione è vuota. Aggiungi un esercizio o un blocco.
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {lessonItems.map((item, index) => {
+              const isCollapsed = collapsedItemKeys.has(item.key);
+
               if (item.type === "exercise") {
                 const exercise = exercises.find(
                   (candidate) => candidate.id === item.exercise.exerciseId,
@@ -1291,7 +1311,7 @@ export function LessonBuilder({
                     ref={(element) => {
                       newItemRefs.current[item.key] = element;
                     }}
-                    className="rounded-xl border border-sky-200 bg-sky-50/70 p-1 shadow-sm"
+                    className="overflow-hidden rounded-lg border border-border bg-background"
                   >
                     <ExerciseRow
                       exercise={exercise}
@@ -1309,6 +1329,9 @@ export function LessonBuilder({
                       onVariantChange={(variantId) =>
                         updateExerciseVariant(item.exercise.key, variantId)
                       }
+                      standalone
+                      collapsed={isCollapsed}
+                      onToggleCollapsed={() => toggleCollapsed(item.key)}
                     />
                   </div>
                 );
@@ -1320,9 +1343,9 @@ export function LessonBuilder({
                   ref={(element) => {
                     newItemRefs.current[item.key] = element;
                   }}
-                  className="overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50/30 shadow-sm"
+                  className="overflow-hidden rounded-lg border border-border bg-background"
                 >
-                  <div className="flex flex-wrap items-center gap-2 border-b border-emerald-200 bg-emerald-100/70 p-3">
+                  <div className="flex flex-wrap items-center gap-2 bg-emerald-50 px-2.5 py-2">
                     <MoveButtons
                       canMoveUp={index > 0}
                       canMoveDown={index < lessonItems.length - 1}
@@ -1337,7 +1360,7 @@ export function LessonBuilder({
                       onChange={(event) =>
                         renameBlock(item.key, event.target.value)
                       }
-                      className="min-w-48 flex-1 font-semibold"
+                      className="h-8 min-w-48 flex-1 bg-background font-semibold"
                       aria-label="Nome del blocco"
                     />
 
@@ -1345,98 +1368,117 @@ export function LessonBuilder({
                       type="button"
                       variant="outline"
                       size="sm"
+                      className="h-8"
                       onClick={() => void saveBlockAsReusable(item.block)}
                     >
                       Salva blocco
                     </Button>
 
+                    <button
+                      type="button"
+                      onClick={() => toggleCollapsed(item.key)}
+                      className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border bg-background text-sm text-muted-foreground hover:text-foreground"
+                      aria-label={
+                        isCollapsed
+                          ? `Espandi il blocco ${item.block.name}`
+                          : `Riduci il blocco ${item.block.name}`
+                      }
+                      title={isCollapsed ? "Espandi blocco" : "Riduci blocco"}
+                    >
+                      {isCollapsed ? "▼" : "▲"}
+                    </button>
+
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
+                      className="h-8"
                       onClick={() => removeBlock(item.key)}
                     >
                       Rimuovi
                     </Button>
                   </div>
 
-                  <div className="space-y-2 p-3">
-                    {item.block.exercises.length === 0 ? (
-                      <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-                        Nessun esercizio nel blocco.
-                      </p>
-                    ) : (
-                      item.block.exercises.map(
-                        (selectedExercise, exerciseIndex) => {
-                          const exercise = exercises.find(
-                            (candidate) =>
-                              candidate.id === selectedExercise.exerciseId,
-                          );
+                  {!isCollapsed && (
+                    <div className="space-y-1.5 border-t border-border px-2.5 py-2">
+                      {item.block.exercises.length === 0 ? (
+                        <p className="rounded-md border border-dashed px-3 py-2 text-center text-sm text-muted-foreground">
+                          Nessun esercizio nel blocco.
+                        </p>
+                      ) : (
+                        item.block.exercises.map(
+                          (selectedExercise, exerciseIndex) => {
+                            const exercise = exercises.find(
+                              (candidate) =>
+                                candidate.id === selectedExercise.exerciseId,
+                            );
 
-                          if (!exercise) {
-                            return null;
-                          }
+                            if (!exercise) {
+                              return null;
+                            }
 
-                          return (
-                            <div
-                              key={selectedExercise.key}
-                              className="rounded-lg border bg-background"
-                            >
-                              <ExerciseRow
-                                exercise={exercise}
-                                selectedExercise={selectedExercise}
-                                blocks={blocks}
-                                destination={item.key}
-                                canMoveUp={exerciseIndex > 0}
-                                canMoveDown={
-                                  exerciseIndex <
-                                  item.block.exercises.length - 1
-                                }
-                                onMoveUp={() =>
-                                  moveBlockExercise(
-                                    item.key,
-                                    selectedExercise.key,
-                                    -1,
-                                  )
-                                }
-                                onMoveDown={() =>
-                                  moveBlockExercise(
-                                    item.key,
-                                    selectedExercise.key,
-                                    1,
-                                  )
-                                }
-                                onDestinationChange={(target) =>
-                                  changeExerciseDestination(
-                                    selectedExercise.key,
-                                    target,
-                                  )
-                                }
-                                onRemove={() =>
-                                  removeExercise(selectedExercise.key)
-                                }
-                                onVariantChange={(variantId) =>
-                                  updateExerciseVariant(
-                                    selectedExercise.key,
-                                    variantId,
-                                  )
-                                }
-                              />
-                            </div>
-                          );
-                        },
-                      )
-                    )}
+                            return (
+                              <div
+                                key={selectedExercise.key}
+                                className="rounded-md border border-border bg-background"
+                              >
+                                <ExerciseRow
+                                  exercise={exercise}
+                                  selectedExercise={selectedExercise}
+                                  blocks={blocks}
+                                  destination={item.key}
+                                  canMoveUp={exerciseIndex > 0}
+                                  canMoveDown={
+                                    exerciseIndex <
+                                    item.block.exercises.length - 1
+                                  }
+                                  onMoveUp={() =>
+                                    moveBlockExercise(
+                                      item.key,
+                                      selectedExercise.key,
+                                      -1,
+                                    )
+                                  }
+                                  onMoveDown={() =>
+                                    moveBlockExercise(
+                                      item.key,
+                                      selectedExercise.key,
+                                      1,
+                                    )
+                                  }
+                                  onDestinationChange={(target) =>
+                                    changeExerciseDestination(
+                                      selectedExercise.key,
+                                      target,
+                                    )
+                                  }
+                                  onRemove={() =>
+                                    removeExercise(selectedExercise.key)
+                                  }
+                                  onVariantChange={(variantId) =>
+                                    updateExerciseVariant(
+                                      selectedExercise.key,
+                                      variantId,
+                                    )
+                                  }
+                                />
+                              </div>
+                            );
+                          },
+                        )
+                      )}
 
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openExerciseModal(item.key)}
-                    >
-                      + Aggiungi esercizio
-                    </Button>
-                  </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8"
+                        onClick={() => openExerciseModal(item.key)}
+                      >
+                        + Aggiungi esercizio
+                      </Button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -1784,7 +1826,7 @@ function MoveButtons({
         type="button"
         disabled={!canMoveUp}
         onClick={onMoveUp}
-        className="flex h-7 w-8 cursor-pointer items-center justify-center text-xs hover:bg-muted disabled:cursor-default disabled:opacity-25"
+        className="flex h-6 w-7 cursor-pointer items-center justify-center text-[10px] hover:bg-muted disabled:cursor-default disabled:opacity-25"
         aria-label={upLabel}
         title={upLabel}
       >
@@ -1795,7 +1837,7 @@ function MoveButtons({
         type="button"
         disabled={!canMoveDown}
         onClick={onMoveDown}
-        className="flex h-7 w-8 cursor-pointer items-center justify-center border-t text-xs hover:bg-muted disabled:cursor-default disabled:opacity-25"
+        className="flex h-6 w-7 cursor-pointer items-center justify-center border-t text-[10px] hover:bg-muted disabled:cursor-default disabled:opacity-25"
         aria-label={downLabel}
         title={downLabel}
       >
@@ -1817,6 +1859,9 @@ interface ExerciseRowProps {
   onDestinationChange: (target: ExerciseDestination) => void;
   onRemove: () => void;
   onVariantChange: (variantId: string) => void;
+  standalone?: boolean;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
 }
 
 function ExerciseRow({
@@ -1831,10 +1876,19 @@ function ExerciseRow({
   onDestinationChange,
   onRemove,
   onVariantChange,
+  standalone = false,
+  collapsed = false,
+  onToggleCollapsed,
 }: ExerciseRowProps) {
   return (
-    <div className="rounded-lg bg-background px-3 py-2">
-      <div className="flex items-center gap-2">
+    <div className="bg-background">
+      <div
+        className={
+          standalone
+            ? "flex items-center gap-2 bg-muted/60 px-2.5 py-2"
+            : "flex items-center gap-2 px-2.5 py-1.5"
+        }
+      >
         <MoveButtons
           canMoveUp={canMoveUp}
           canMoveDown={canMoveDown}
@@ -1848,28 +1902,44 @@ function ExerciseRow({
           {exercise.name}
         </span>
 
-        <select
-          value={destination}
-          onChange={(event) =>
-            onDestinationChange(event.target.value as ExerciseDestination)
-          }
-          className="max-w-44 cursor-pointer rounded-md border bg-background px-2 py-1.5 text-xs"
-          aria-label={`Destinazione di ${exercise.name}`}
-          title="Sposta esercizio"
-        >
-          <option value="unblocked">Fuori dai blocchi</option>
+        {!collapsed && (
+          <select
+            value={destination}
+            onChange={(event) =>
+              onDestinationChange(event.target.value as ExerciseDestination)
+            }
+            className="max-w-44 cursor-pointer rounded-md border bg-background px-2 py-1.5 text-xs"
+            aria-label={`Destinazione di ${exercise.name}`}
+            title="Sposta esercizio"
+          >
+            <option value="unblocked">Fuori dai blocchi</option>
 
-          {blocks.map((block) => (
-            <option key={block.key} value={block.key}>
-              {block.name}
-            </option>
-          ))}
-        </select>
+            {blocks.map((block) => (
+              <option key={block.key} value={block.key}>
+                {block.name}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {standalone && onToggleCollapsed && (
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border bg-background text-sm text-muted-foreground hover:text-foreground"
+            aria-label={
+              collapsed ? `Espandi ${exercise.name}` : `Riduci ${exercise.name}`
+            }
+            title={collapsed ? "Espandi esercizio" : "Riduci esercizio"}
+          >
+            {collapsed ? "▼" : "▲"}
+          </button>
+        )}
 
         <button
           type="button"
           onClick={onRemove}
-          className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border text-lg text-muted-foreground hover:text-foreground"
+          className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border bg-background text-lg text-muted-foreground hover:text-foreground"
           aria-label={`Rimuovi ${exercise.name}`}
           title="Rimuovi dalla lezione"
         >
@@ -1877,21 +1947,29 @@ function ExerciseRow({
         </button>
       </div>
 
-      {exercise.exercise_variants.length > 0 && (
-        <select
-          value={selectedExercise.variantId ?? ""}
-          onChange={(event) => onVariantChange(event.target.value)}
-          className="mt-2 w-full cursor-pointer rounded-md border bg-background px-2 py-2 text-sm"
-          aria-label={`Variante di ${exercise.name}`}
+      {!collapsed && exercise.exercise_variants.length > 0 && (
+        <div
+          className={
+            standalone
+              ? "border-t border-border bg-background px-2.5 py-2"
+              : "border-t border-border px-2.5 py-1.5"
+          }
         >
-          <option value="">Nessuna variante</option>
+          <select
+            value={selectedExercise.variantId ?? ""}
+            onChange={(event) => onVariantChange(event.target.value)}
+            className="w-full cursor-pointer rounded-md border bg-background px-2 py-1.5 text-sm"
+            aria-label={`Variante di ${exercise.name}`}
+          >
+            <option value="">Nessuna variante</option>
 
-          {exercise.exercise_variants.map((variant) => (
-            <option key={variant.id} value={variant.id}>
-              {variant.variant}
-            </option>
-          ))}
-        </select>
+            {exercise.exercise_variants.map((variant) => (
+              <option key={variant.id} value={variant.id}>
+                {variant.variant}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
     </div>
   );
