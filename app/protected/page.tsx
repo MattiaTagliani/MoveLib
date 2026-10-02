@@ -1,3 +1,4 @@
+import { ThemeCustomizer } from "@/components/theme/theme-customizer";
 import Link from "next/link";
 
 export default function ProtectedPage() {
@@ -14,9 +15,10 @@ export default function ProtectedPage() {
       <div className="grid gap-4 sm:grid-cols-2">
         <Link
           href="/protected/exercises"
-          className="rounded-lg border p-6 transition-colors hover:bg-muted"
+          className="rounded-lg border bg-card p-6 transition-colors hover:bg-accent"
         >
           <h2 className="font-semibold">Esercizi</h2>
+
           <p className="mt-2 text-sm text-muted-foreground">
             Consulta e gestisci la libreria degli esercizi.
           </p>
@@ -24,14 +26,17 @@ export default function ProtectedPage() {
 
         <Link
           href="/protected/lessons"
-          className="rounded-lg border p-6 transition-colors hover:bg-muted"
+          className="rounded-lg border bg-card p-6 transition-colors hover:bg-accent"
         >
           <h2 className="font-semibold">Lezioni</h2>
+
           <p className="mt-2 text-sm text-muted-foreground">
             Prepara e organizza le tue lezioni.
           </p>
         </Link>
       </div>
+
+      <ThemeCustomizer />
     </main>
   );
 }

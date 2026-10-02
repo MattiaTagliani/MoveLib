@@ -60,6 +60,20 @@ export function ExerciseLibrary({
     );
   }, [exercises]);
 
+  const visibleTags = useMemo(() => {
+    const normalizedSearch = search.trim().toLocaleLowerCase("it");
+
+    if (!normalizedSearch) {
+      return availableTags;
+    }
+
+    return availableTags.filter(
+      (tag) =>
+        selectedTagIds.includes(tag.id) ||
+        tag.name.toLocaleLowerCase("it").includes(normalizedSearch),
+    );
+  }, [availableTags, search, selectedTagIds]);
+
   const filteredExercises = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase("it");
 
@@ -72,7 +86,12 @@ export function ExerciseLibrary({
         exercise.name.toLocaleLowerCase("it").includes(normalizedSearch) ||
         exercise.description
           ?.toLocaleLowerCase("it")
-          .includes(normalizedSearch);
+          .includes(normalizedSearch) ||
+        exercise.exercise_tags.some((exerciseTag) =>
+          exerciseTag.tags.name
+            .toLocaleLowerCase("it")
+            .includes(normalizedSearch),
+        );
 
       if (!matchesSearch) {
         return false;
@@ -184,7 +203,7 @@ export function ExerciseLibrary({
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cerca esercizio..."
+            placeholder="Cerca esercizio o tag..."
             className="sm:flex-1"
           />
 
@@ -230,7 +249,7 @@ export function ExerciseLibrary({
               ★ Preferiti
             </Button>
 
-            {availableTags.map((tag) => {
+            {visibleTags.map((tag) => {
               const isSelected = selectedTagIds.includes(tag.id);
 
               return (

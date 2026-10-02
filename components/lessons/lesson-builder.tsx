@@ -344,6 +344,20 @@ export function LessonBuilder({
     );
   }, [exercises]);
 
+  const visibleTags = useMemo(() => {
+    const normalizedSearch = search.trim().toLocaleLowerCase("it");
+
+    if (!normalizedSearch) {
+      return availableTags;
+    }
+
+    return availableTags.filter(
+      (tag) =>
+        selectedTagIds.includes(tag.id) ||
+        tag.name.toLocaleLowerCase("it").includes(normalizedSearch),
+    );
+  }, [availableTags, search, selectedTagIds]);
+
   const filteredExercises = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase("it");
 
@@ -356,10 +370,13 @@ export function LessonBuilder({
         normalizedSearch.length === 0 ||
         exercise.name.toLocaleLowerCase("it").includes(normalizedSearch) ||
         exercise.description
-
           ?.toLocaleLowerCase("it")
-
-          .includes(normalizedSearch);
+          .includes(normalizedSearch) ||
+        exercise.exercise_tags.some((exerciseTag) =>
+          exerciseTag.tags.name
+            .toLocaleLowerCase("it")
+            .includes(normalizedSearch),
+        );
 
       if (!matchesSearch) {
         return false;
@@ -1345,7 +1362,7 @@ export function LessonBuilder({
                   }}
                   className="overflow-hidden rounded-lg border border-border bg-background"
                 >
-                  <div className="flex flex-wrap items-center gap-2 bg-emerald-50 px-2.5 py-2">
+                  <div className="flex flex-wrap items-center gap-2 bg-accent px-2.5 py-2">
                     <MoveButtons
                       canMoveUp={index > 0}
                       canMoveDown={index < lessonItems.length - 1}
@@ -1584,7 +1601,7 @@ export function LessonBuilder({
                 <Input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Cerca esercizio..."
+                  placeholder="Cerca esercizio o tag..."
                   className="flex-1"
                 />
 
@@ -1625,7 +1642,7 @@ export function LessonBuilder({
                   ★ Preferiti
                 </Button>
 
-                {availableTags.map((tag) => (
+                {visibleTags.map((tag) => (
                   <Button
                     key={tag.id}
                     type="button"

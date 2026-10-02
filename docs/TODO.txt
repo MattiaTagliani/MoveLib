@@ -1,0 +1,55 @@
+****HOW TO ADD A COLOR THEME****
+Yes, mostly, but there are three places because each has a different purpose.
+Suppose you want to add "sunset":
+1. lib/movelib-theme.ts — add its ID:
+export const moveLibThemes = [
+  "sage",
+  "ocean",
+  "lavender",
+  "rose",
+  "sand",
+  "slate",
+  "sunset",
+] as const;
+
+2. app/globals.css — define what the theme actually looks like:
+[data-theme="sunset"] {
+  --background: ...;
+  --foreground: ...;
+  --card: ...;
+  --primary: ...;
+  --primary-foreground: ...;
+  --secondary: ...;
+  --secondary-foreground: ...;
+  --muted: ...;
+  --muted-foreground: ...;
+  --accent: ...;
+  --accent-foreground: ...;
+  --border: ...;
+  --input: ...;
+  --ring: ...;
+}
+
+3. theme-customizer.tsx — add the choice displayed to the user:
+{
+  id: "sunset",
+  name: "Tramonto",
+  colors: ["#...", "#...", "#..."],
+},
+
+And because we currently have this database constraint:
+theme in (
+  'sage',
+  'ocean',
+  'lavender',
+  'rose',
+  'sand',
+  'slate'
+)
+
+you'd also need to update that constraint to permit "sunset".
+So the current architecture is intentionally:
+TypeScript list = valid themes in the app
+CSS = appearance
+Customizer = what the user sees
+DB constraint = what can actually be saved

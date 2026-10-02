@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export interface ExerciseTag {
   id: string;
@@ -22,9 +22,24 @@ export function TagSelector({
   onSelectedTagIdsChange,
 }: TagSelectorProps) {
   const [tags, setTags] = useState(initialTags);
+  const [tagSearch, setTagSearch] = useState("");
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [newTagName, setNewTagName] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const visibleTags = useMemo(() => {
+    const normalizedSearch = tagSearch.trim().toLocaleLowerCase("it");
+
+    if (!normalizedSearch) {
+      return tags;
+    }
+
+    return tags.filter(
+      (tag) =>
+        selectedTagIds.includes(tag.id) ||
+        tag.name.toLocaleLowerCase("it").includes(normalizedSearch),
+    );
+  }, [tags, tagSearch, selectedTagIds]);
 
   function toggleTag(tagId: string) {
     if (selectedTagIds.includes(tagId)) {
@@ -75,29 +90,43 @@ export function TagSelector({
     onSelectedTagIdsChange([...selectedTagIds, newTag.id]);
 
     setNewTagName("");
+    setTagSearch("");
     setIsAddingTag(false);
   }
 
   return (
     <div className="space-y-3">
       {tags.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {tags.map((tag) => {
-            const isSelected = selectedTagIds.includes(tag.id);
+        <>
+          <Input
+            value={tagSearch}
+            onChange={(event) => setTagSearch(event.target.value)}
+            placeholder="Cerca tag..."
+            className="max-w-md"
+          />
 
-            return (
-              <Button
-                key={tag.id}
-                type="button"
-                variant={isSelected ? "default" : "outline"}
-                size="sm"
-                onClick={() => toggleTag(tag.id)}
-              >
-                {tag.name}
-              </Button>
-            );
-          })}
-        </div>
+          {visibleTags.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {visibleTags.map((tag) => {
+                const isSelected = selectedTagIds.includes(tag.id);
+
+                return (
+                  <Button
+                    key={tag.id}
+                    type="button"
+                    variant={isSelected ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleTag(tag.id)}
+                  >
+                    {tag.name}
+                  </Button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Nessun tag trovato.</p>
+          )}
+        </>
       )}
 
       {isAddingTag ? (
