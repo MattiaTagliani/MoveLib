@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export function UpdatePasswordForm({
   className,
@@ -120,9 +121,8 @@ export function UpdatePasswordForm({
               <div className="grid gap-2">
                 <Label htmlFor="password">Nuova password</Label>
 
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   placeholder="Nuova password"
                   required
                   value={password}

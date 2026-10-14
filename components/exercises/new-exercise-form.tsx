@@ -8,6 +8,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import { ExerciseTag, TagSelector } from "@/components/exercises/tag-selector";
+import { ExercisePhotoPicker } from "@/components/exercises/exercise-photo-picker";
+import {
+  uploadExercisePhoto,
+  validateExercisePhoto,
+} from "@/lib/exercise-photo";
 
 interface NewExerciseFormProps {
   availableTags: ExerciseTag[];
@@ -22,6 +27,7 @@ export function NewExerciseForm({ availableTags }: NewExerciseFormProps) {
   const [maxAge, setMaxAge] = useState("");
   const [variants, setVariants] = useState<string[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [photo, setPhoto] = useState<File | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -53,6 +59,7 @@ export function NewExerciseForm({ availableTags }: NewExerciseFormProps) {
     setSelectedTagIds([]);
     setError(null);
     setIsLoading(false);
+    setPhoto(null);
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -77,6 +84,15 @@ export function NewExerciseForm({ availableTags }: NewExerciseFormProps) {
     ) {
       setError("Inserisci un intervallo di età valido.");
       return;
+    }
+
+    if (photo) {
+      const photoError = validateExercisePhoto(photo);
+
+      if (photoError) {
+        setError(photoError);
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -133,16 +149,25 @@ export function NewExerciseForm({ availableTags }: NewExerciseFormProps) {
         }
       }
 
+      if (photo) {
+        await uploadExercisePhoto(exercise.id, photo);
+      }
+
       resetForm();
       router.replace("/protected/exercises");
     } catch (submitError) {
-      console.error("Exercise creation failed:", submitError);
+      console.error("Exercise creation failed");
+      console.dir(submitError);
 
-      setError(
-        submitError instanceof Error
-          ? submitError.message
-          : "Errore durante la creazione dell'esercizio.",
-      );
+      if (
+        submitError &&
+        typeof submitError === "object" &&
+        "message" in submitError
+      ) {
+        setError(String(submitError.message));
+      } else {
+        setError("Errore durante la creazione dell'esercizio.");
+      }
 
       setIsLoading(false);
     }
@@ -172,6 +197,12 @@ export function NewExerciseForm({ availableTags }: NewExerciseFormProps) {
           className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
         />
       </div>
+
+      <ExercisePhotoPicker
+        file={photo}
+        onFileChange={setPhoto}
+        disabled={isLoading}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">

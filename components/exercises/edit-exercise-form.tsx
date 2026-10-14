@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ExerciseTag, TagSelector } from "@/components/exercises/tag-selector";
+import { ExercisePhotoEditor } from "@/components/exercises/exercise-photo-editor";
 
 interface ExerciseVariant {
   id: string;
@@ -23,6 +24,16 @@ interface Exercise {
   exercise_tags: {
     tag_id: string;
   }[];
+  exercise_media: {
+    id: string;
+    storage_path: string;
+    uploaded_by: string | null;
+  }[];
+}
+
+interface MoveDestination {
+  id: string;
+  name: string;
 }
 
 interface EditableVariant {
@@ -33,11 +44,13 @@ interface EditableVariant {
 interface EditExerciseFormProps {
   exercise: Exercise;
   availableTags: ExerciseTag[];
+  moveDestinations: MoveDestination[];
 }
 
 export function EditExerciseForm({
   exercise,
   availableTags,
+  moveDestinations,
 }: EditExerciseFormProps) {
   const router = useRouter();
 
@@ -254,6 +267,12 @@ export function EditExerciseForm({
           className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
         />
       </div>
+
+      <ExercisePhotoEditor
+        exerciseId={exercise.id}
+        initialMedia={exercise.exercise_media[0] ?? null}
+        moveDestinations={moveDestinations}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">

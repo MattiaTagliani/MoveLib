@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export function SignUpForm({
   className,
@@ -81,9 +82,8 @@ export function SignUpForm({
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
                 </div>
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -93,9 +93,8 @@ export function SignUpForm({
                 <div className="flex items-center">
                   <Label htmlFor="repeat-password">Repeat Password</Label>
                 </div>
-                <Input
+                <PasswordInput
                   id="repeat-password"
-                  type="password"
                   required
                   value={repeatPassword}
                   onChange={(e) => setRepeatPassword(e.target.value)}
