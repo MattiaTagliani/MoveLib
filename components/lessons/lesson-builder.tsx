@@ -12,29 +12,21 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 interface ExerciseVariant {
   id: string;
-
   variant: string;
 }
 
 interface Tag {
   id: string;
-
   name: string;
 }
 
 export interface LessonBuilderExercise {
   id: string;
-
   name: string;
-
   description: string | null;
-
   min_age: number;
-
   max_age: number;
-
   exercise_variants: ExerciseVariant[];
-
   exercise_tags: {
     tags: Tag;
   }[];
@@ -42,81 +34,66 @@ export interface LessonBuilderExercise {
 
 interface InitialLessonExercise {
   id: string;
-
   exercise_id: string;
-
   variant_id: string | null;
-
   position: number;
 }
 
 export interface InitialLessonBlock {
   id: string;
-
   name: string;
-
   position: number;
-
   lesson_exercises: InitialLessonExercise[];
+}
+
+interface LessonBlock {
+  key: string;
+  id: string | null;
+  name: string;
+  exercises: SelectedExercise[];
 }
 
 export interface InitialUnblockedExercise {
   id: string;
-
   exercise_id: string;
-
   variant_id: string | null;
-
   position: number;
 }
 
 interface ReusableLessonBlockExercise {
   id: string;
-
   exercise_id: string;
-
   variant_id: string | null;
-
   position: number;
 }
 
 export interface ReusableLessonBlock {
   id: string;
-
   name: string;
-
   reusable_lesson_block_exercises: ReusableLessonBlockExercise[];
 }
 
 interface SelectedExercise {
   key: string;
-
   exerciseId: string;
-
   variantId: string | null;
 }
 
 interface LessonBlock {
   key: string;
-
   name: string;
-
   exercises: SelectedExercise[];
 }
 
 interface BlockLessonItem {
   type: "block";
-
   key: string;
-
   block: LessonBlock;
 }
 
 interface ExerciseLessonItem {
   type: "exercise";
-
   key: string;
-
   exercise: SelectedExercise;
 }
 
@@ -124,17 +101,11 @@ type LessonItem = BlockLessonItem | ExerciseLessonItem;
 
 interface LessonBuilderProps {
   lessonId: string;
-
   lessonTitle: string;
-
   exercises: LessonBuilderExercise[];
-
   initialBlocks: InitialLessonBlock[];
-
   initialUnblockedExercises: InitialUnblockedExercise[];
-
   reusableBlocks: ReusableLessonBlock[];
-
   favouriteExerciseIds: string[];
 }
 
@@ -142,27 +113,17 @@ type ExerciseDestination = string | "unblocked";
 
 export function LessonBuilder({
   lessonId,
-
   lessonTitle,
-
   exercises,
-
   initialBlocks,
-
   initialUnblockedExercises,
-
   reusableBlocks: initialReusableBlocks,
-
   favouriteExerciseIds,
 }: LessonBuilderProps) {
   const router = useRouter();
-
   const keyCounter = useRef(0);
-
   const newItemRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
   const itemToScrollTo = useRef<string | null>(null);
-
   function createKey(prefix: string) {
     keyCounter.current += 1;
 
@@ -170,39 +131,28 @@ export function LessonBuilder({
   }
 
   const [title, setTitle] = useState(lessonTitle);
-
   const [lessonItems, setLessonItems] = useState<LessonItem[]>(() => {
     const positionedItems: {
       position: number;
-
       item: LessonItem;
     }[] = [];
 
     initialBlocks.forEach((block) => {
       const key = `existing-block-${block.id}`;
-
       positionedItems.push({
         position: block.position,
-
         item: {
           type: "block",
-
           key,
-
           block: {
             key,
-
+            id: block.id,
             name: block.name,
-
             exercises: [...block.lesson_exercises]
-
               .sort((a, b) => a.position - b.position)
-
               .map((lessonExercise) => ({
                 key: `existing-exercise-${lessonExercise.id}`,
-
                 exerciseId: lessonExercise.exercise_id,
-
                 variantId: lessonExercise.variant_id,
               })),
           },
@@ -218,14 +168,10 @@ export function LessonBuilder({
 
         item: {
           type: "exercise",
-
           key,
-
           exercise: {
             key,
-
             exerciseId: exercise.exercise_id,
-
             variantId: exercise.variant_id,
           },
         },
@@ -233,39 +179,24 @@ export function LessonBuilder({
     });
 
     return positionedItems
-
       .sort((a, b) => a.position - b.position)
-
       .map((entry) => entry.item);
   });
 
   const [reusableBlocks, setReusableBlocks] = useState(initialReusableBlocks);
-
   const [exerciseModalOpen, setExerciseModalOpen] = useState(false);
-
   const [reusableModalOpen, setReusableModalOpen] = useState(false);
-
   const [destination, setDestination] =
     useState<ExerciseDestination>("unblocked");
-
   const [checkedExerciseIds, setCheckedExerciseIds] = useState<string[]>([]);
-
   const [search, setSearch] = useState("");
-
   const [minAge, setMinAge] = useState("");
-
   const [maxAge, setMaxAge] = useState("");
-
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-
   const [showOnlyFavourites, setShowOnlyFavourites] = useState(false);
-
   const [isSaving, setIsSaving] = useState(false);
-
   const [isDeleting, setIsDeleting] = useState(false);
-
   const [message, setMessage] = useState<string | null>(null);
-
   const [collapsedItemKeys, setCollapsedItemKeys] = useState<Set<string>>(
     () => new Set(),
   );
@@ -273,13 +204,11 @@ export function LessonBuilder({
   function toggleCollapsed(itemKey: string) {
     setCollapsedItemKeys((current) => {
       const next = new Set(current);
-
       if (next.has(itemKey)) {
         next.delete(itemKey);
       } else {
         next.add(itemKey);
       }
-
       return next;
     });
   }
@@ -287,11 +216,8 @@ export function LessonBuilder({
   const blocks = useMemo(
     () =>
       lessonItems
-
         .filter((item): item is BlockLessonItem => item.type === "block")
-
         .map((item) => item.block),
-
     [lessonItems],
   );
 
@@ -310,7 +236,6 @@ export function LessonBuilder({
 
   useEffect(() => {
     const itemKey = itemToScrollTo.current;
-
     if (!itemKey) {
       return;
     }
@@ -323,7 +248,6 @@ export function LessonBuilder({
 
     element.scrollIntoView({
       behavior: "smooth",
-
       block: "center",
     });
 
@@ -444,34 +368,24 @@ export function LessonBuilder({
 
   function clearFilters() {
     setSearch("");
-
     setMinAge("");
-
     setMaxAge("");
-
     setSelectedTagIds([]);
-
     setShowOnlyFavourites(false);
   }
 
   function addBlock() {
     const key = createKey("new-block");
-
     itemToScrollTo.current = key;
-
     setLessonItems((current) => [
       ...current,
-
       {
         type: "block",
-
         key,
-
         block: {
           key,
-
+          id: null,
           name: "Nuovo blocco",
-
           exercises: [],
         },
       },
@@ -486,13 +400,10 @@ export function LessonBuilder({
         if (item.type !== "block" || item.key !== blockKey) {
           return item;
         }
-
         return {
           ...item,
-
           block: {
             ...item.block,
-
             name,
           },
         };
@@ -505,11 +416,9 @@ export function LessonBuilder({
       (lessonItem) =>
         lessonItem.type === "block" && lessonItem.key === blockKey,
     );
-
     if (!item || item.type !== "block") {
       return;
     }
-
     if (
       !window.confirm(
         `Vuoi rimuovere il blocco "${item.block.name}" dalla lezione?`,
@@ -517,7 +426,6 @@ export function LessonBuilder({
     ) {
       return;
     }
-
     setLessonItems((current) =>
       current.filter((lessonItem) => lessonItem.key !== blockKey),
     );
@@ -525,14 +433,11 @@ export function LessonBuilder({
 
   function addExerciseToDestination(
     exerciseId: string,
-
     target: ExerciseDestination,
   ) {
     const selectedExercise: SelectedExercise = {
       key: createKey("exercise"),
-
       exerciseId,
-
       variantId: null,
     };
 
@@ -540,12 +445,9 @@ export function LessonBuilder({
       if (target === "unblocked") {
         return [
           ...current,
-
           {
             type: "exercise",
-
             key: selectedExercise.key,
-
             exercise: selectedExercise,
           },
         ];
@@ -863,90 +765,64 @@ export function LessonBuilder({
 
     if (!name) {
       setMessage("Il blocco deve avere un nome.");
-
       return;
     }
 
     const supabase = createClient();
-
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
     if (!user) {
       setMessage("Sessione non valida.");
-
       return;
     }
 
     const { data: savedBlock, error } = await supabase
-
       .from("reusable_lesson_blocks")
-
       .insert({
         user_id: user.id,
-
         name,
       })
-
       .select("id, name")
-
       .single();
-
     if (error || !savedBlock) {
       setMessage("Errore durante il salvataggio del blocco.");
-
       return;
     }
 
     if (block.exercises.length > 0) {
       const rows = block.exercises.map((exercise, position) => ({
         reusable_lesson_block_id: savedBlock.id,
-
         exercise_id: exercise.exerciseId,
-
         variant_id: exercise.variantId,
 
         position,
       }));
 
       const { error: exercisesError } = await supabase
-
         .from("reusable_lesson_block_exercises")
-
         .insert(rows);
 
       if (exercisesError) {
         await supabase
-
           .from("reusable_lesson_blocks")
-
           .delete()
-
           .eq("id", savedBlock.id);
-
         setMessage("Errore durante il salvataggio del blocco.");
-
         return;
       }
     }
 
     setReusableBlocks((current) => [
       ...current,
-
       {
         id: savedBlock.id,
-
         name,
-
         reusable_lesson_block_exercises: block.exercises.map(
           (exercise, position) => ({
             id: createKey("local-reusable"),
-
             exercise_id: exercise.exerciseId,
-
             variant_id: exercise.variantId,
-
             position,
           }),
         ),
@@ -958,31 +834,21 @@ export function LessonBuilder({
 
   function addReusableBlock(block: ReusableLessonBlock) {
     const key = createKey("reusable-block");
-
     itemToScrollTo.current = key;
-
     setLessonItems((current) => [
       ...current,
-
       {
         type: "block",
-
         key,
-
         block: {
           key,
-
+          id: null,
           name: block.name,
-
           exercises: [...block.reusable_lesson_block_exercises]
-
             .sort((a, b) => a.position - b.position)
-
             .map((exercise) => ({
               key: createKey("reusable-exercise"),
-
               exerciseId: exercise.exercise_id,
-
               variantId: exercise.variant_id,
             })),
         },
@@ -1002,32 +868,28 @@ export function LessonBuilder({
     }
 
     const supabase = createClient();
-
     const { error } = await supabase
-
       .from("reusable_lesson_blocks")
-
       .delete()
-
       .eq("id", block.id);
-
     if (error) {
       setMessage("Errore durante l'eliminazione del blocco.");
-
       return;
     }
-
     setReusableBlocks((current) =>
       current.filter((item) => item.id !== block.id),
     );
   }
 
   async function saveLesson() {
+    if (isSaving || isDeleting) {
+      return;
+    }
+
     const trimmedTitle = title.trim();
 
     if (!trimmedTitle) {
       setMessage("Inserisci un titolo per la lezione.");
-
       return;
     }
 
@@ -1037,161 +899,219 @@ export function LessonBuilder({
 
     if (currentBlocks.some((item) => !item.block.name.trim())) {
       setMessage("Tutti i blocchi devono avere un nome.");
-
       return;
     }
 
     setIsSaving(true);
-
     setMessage(null);
 
     const supabase = createClient();
 
-    const { error: lessonError } = await supabase
+    try {
+      // 1. Read existing blocks before making changes.
+      const { data: savedBlocks, error: readError } = await supabase
+        .from("lesson_blocks")
+        .select("id")
+        .eq("lesson_id", lessonId);
 
-      .from("lessons")
+      if (readError) {
+        throw readError;
+      }
 
-      .update({
-        title: trimmedTitle,
+      const existingIds = new Set((savedBlocks ?? []).map((block) => block.id));
 
-        updated_at: new Date().toISOString(),
-      })
+      // 2. Verify that existing block IDs belong to this lesson.
+      for (const item of currentBlocks) {
+        if (item.block.id && !existingIds.has(item.block.id)) {
+          throw new Error(
+            "Un blocco non appartiene più a questa lezione. Ricarica la pagina.",
+          );
+        }
+      }
 
-      .eq("id", lessonId);
+      // 3. Create new blocks and update existing ones.
+      // Keep a mapping from React keys to database IDs.
+      const blockIds = new Map<string, string>();
 
-    if (lessonError) {
-      setMessage("Errore durante il salvataggio della lezione.");
+      for (let position = 0; position < lessonItems.length; position++) {
+        const item = lessonItems[position];
 
-      setIsSaving(false);
-
-      return;
-    }
-
-    const { error: deleteExercisesError } = await supabase
-
-      .from("lesson_exercises")
-
-      .delete()
-
-      .eq("lesson_id", lessonId);
-
-    if (deleteExercisesError) {
-      setMessage("Errore durante il salvataggio degli esercizi.");
-
-      setIsSaving(false);
-
-      return;
-    }
-
-    const { error: deleteBlocksError } = await supabase
-
-      .from("lesson_blocks")
-
-      .delete()
-
-      .eq("lesson_id", lessonId);
-
-    if (deleteBlocksError) {
-      setMessage("Errore durante il salvataggio dei blocchi.");
-
-      setIsSaving(false);
-
-      return;
-    }
-
-    for (
-      let topLevelPosition = 0;
-      topLevelPosition < lessonItems.length;
-      topLevelPosition++
-    ) {
-      const item = lessonItems[topLevelPosition];
-
-      if (item.type === "exercise") {
-        const { error } = await supabase.from("lesson_exercises").insert({
-          lesson_id: lessonId,
-
-          lesson_block_id: null,
-
-          exercise_id: item.exercise.exerciseId,
-
-          variant_id: item.exercise.variantId,
-
-          position: 0,
-
-          lesson_position: topLevelPosition,
-        });
-
-        if (error) {
-          setMessage("Errore durante il salvataggio degli esercizi.");
-
-          setIsSaving(false);
-
-          return;
+        if (item.type !== "block") {
+          continue;
         }
 
-        continue;
+        const blockName = item.block.name.trim();
+
+        if (item.block.id) {
+          const { data, error } = await supabase
+            .from("lesson_blocks")
+            .update({
+              name: blockName,
+              position,
+            })
+            .eq("id", item.block.id)
+            .eq("lesson_id", lessonId)
+            .select("id")
+            .single();
+
+          if (error || !data) {
+            throw error ?? new Error("Blocco non trovato.");
+          }
+
+          blockIds.set(item.key, data.id);
+        } else {
+          const { data, error } = await supabase
+            .from("lesson_blocks")
+            .insert({
+              lesson_id: lessonId,
+              name: blockName,
+              position,
+            })
+            .select("id")
+            .single();
+
+          if (error || !data) {
+            throw error ?? new Error("Impossibile creare il blocco.");
+          }
+
+          blockIds.set(item.key, data.id);
+        }
       }
 
-      const { data: insertedBlock, error: blockError } = await supabase
+      // 4. Replace exercise associations, but NOT their parent blocks.
+      const { error: deleteExercisesError } = await supabase
+        .from("lesson_exercises")
+        .delete()
+        .eq("lesson_id", lessonId);
 
-        .from("lesson_blocks")
+      if (deleteExercisesError) {
+        throw deleteExercisesError;
+      }
 
-        .insert({
-          lesson_id: lessonId,
+      const exerciseRows: {
+        lesson_id: string;
+        lesson_block_id: string | null;
+        exercise_id: string;
+        variant_id: string | null;
+        position: number;
+        lesson_position: number | null;
+      }[] = [];
 
-          name: item.block.name.trim(),
+      for (
+        let topLevelPosition = 0;
+        topLevelPosition < lessonItems.length;
+        topLevelPosition++
+      ) {
+        const item = lessonItems[topLevelPosition];
 
-          position: topLevelPosition,
+        if (item.type === "exercise") {
+          exerciseRows.push({
+            lesson_id: lessonId,
+            lesson_block_id: null,
+            exercise_id: item.exercise.exerciseId,
+            variant_id: item.exercise.variantId,
+            position: 0,
+            lesson_position: topLevelPosition,
+          });
+
+          continue;
+        }
+
+        const blockId = blockIds.get(item.key);
+
+        if (!blockId) {
+          throw new Error("ID del blocco non disponibile.");
+        }
+
+        item.block.exercises.forEach((exercise, position) => {
+          exerciseRows.push({
+            lesson_id: lessonId,
+            lesson_block_id: blockId,
+            exercise_id: exercise.exerciseId,
+            variant_id: exercise.variantId,
+            position,
+            lesson_position: null,
+          });
+        });
+      }
+
+      if (exerciseRows.length > 0) {
+        const { error: insertExercisesError } = await supabase
+          .from("lesson_exercises")
+          .insert(exerciseRows);
+
+        if (insertExercisesError) {
+          throw insertExercisesError;
+        }
+      }
+
+      // 5. Delete only blocks that the user removed.
+      const retainedIds = new Set(blockIds.values());
+
+      const removedIds = [...existingIds].filter((id) => !retainedIds.has(id));
+
+      if (removedIds.length > 0) {
+        const { error: deleteBlocksError } = await supabase
+          .from("lesson_blocks")
+          .delete()
+          .eq("lesson_id", lessonId)
+          .in("id", removedIds);
+
+        if (deleteBlocksError) {
+          throw deleteBlocksError;
+        }
+      }
+
+      // 6. Save the lesson title.
+      const { error: lessonError } = await supabase
+        .from("lessons")
+        .update({
+          title: trimmedTitle,
+          updated_at: new Date().toISOString(),
         })
+        .eq("id", lessonId);
 
-        .select("id")
-
-        .single();
-
-      if (blockError || !insertedBlock) {
-        setMessage("Errore durante il salvataggio dei blocchi.");
-
-        setIsSaving(false);
-
-        return;
+      if (lessonError) {
+        throw lessonError;
       }
 
-      if (item.block.exercises.length === 0) {
-        continue;
-      }
+      // 7. Store newly assigned block IDs in React state.
+      setLessonItems((current) =>
+        current.map((item) => {
+          if (item.type !== "block") {
+            return item;
+          }
 
-      const rows = item.block.exercises.map((exercise, position) => ({
-        lesson_id: lessonId,
+          const savedId = blockIds.get(item.key);
 
-        lesson_block_id: insertedBlock.id,
+          if (!savedId) {
+            return item;
+          }
 
-        exercise_id: exercise.exerciseId,
+          return {
+            ...item,
+            block: {
+              ...item.block,
+              id: savedId,
+            },
+          };
+        }),
+      );
 
-        variant_id: exercise.variantId,
+      setTitle(trimmedTitle);
+      setMessage("Lezione salvata.");
+      router.refresh();
+    } catch (error) {
+      console.error("Lesson saving failed:", error);
 
-        position,
-
-        lesson_position: null,
-      }));
-
-      const { error } = await supabase.from("lesson_exercises").insert(rows);
-
-      if (error) {
-        setMessage("Errore durante il salvataggio degli esercizi.");
-
-        setIsSaving(false);
-
-        return;
-      }
+      setMessage(
+        error instanceof Error
+          ? `Errore durante il salvataggio: ${error.message}. Ricarica la lezione prima di riprovare.`
+          : "Errore durante il salvataggio. Ricarica la lezione prima di riprovare.",
+      );
+    } finally {
+      setIsSaving(false);
     }
-
-    setTitle(trimmedTitle);
-
-    setMessage("Lezione salvata.");
-
-    setIsSaving(false);
-
-    router.refresh();
   }
 
   async function deleteLesson() {
@@ -1204,23 +1124,15 @@ export function LessonBuilder({
     const supabase = createClient();
 
     const { error } = await supabase
-
       .from("lessons")
-
       .delete()
-
       .eq("id", lessonId);
-
     if (error) {
       setMessage("Errore durante l'eliminazione della lezione.");
-
       setIsDeleting(false);
-
       return;
     }
-
     router.push("/protected/lessons");
-
     router.refresh();
   }
 
