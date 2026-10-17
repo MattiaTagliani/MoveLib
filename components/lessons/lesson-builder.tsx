@@ -1,14 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-
 import { Input } from "@/components/ui/input";
-
 import { createClient } from "@/lib/supabase/client";
-
 import { useRouter } from "next/navigation";
-
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  MessageDialog,
+  type MessageDialogVariant,
+} from "@/components/ui/message-dialog";
 
 interface ExerciseVariant {
   id: string;
@@ -79,12 +79,6 @@ interface SelectedExercise {
   variantId: string | null;
 }
 
-interface LessonBlock {
-  key: string;
-  name: string;
-  exercises: SelectedExercise[];
-}
-
 interface BlockLessonItem {
   type: "block";
   key: string;
@@ -110,6 +104,46 @@ interface LessonBuilderProps {
 }
 
 type ExerciseDestination = string | "unblocked";
+
+function normalizeBlockName(name: string): string {
+  return name.trim().replace(/\s+/g, " ").toLocaleLowerCase("it");
+}
+
+function getExerciseSignature(
+  exercises: {
+    exerciseId: string;
+    variantId: string | null;
+  }[],
+): string {
+  return JSON.stringify(
+    exercises
+      .map(
+        (exercise) => `${exercise.exerciseId}:${exercise.variantId ?? "none"}`,
+      )
+      .sort(),
+  );
+}
+
+function isDuplicateReusableBlock(
+  name: string,
+  exercises: SelectedExercise[],
+  existingBlock: ReusableLessonBlock,
+): boolean {
+  if (normalizeBlockName(name) !== normalizeBlockName(existingBlock.name)) {
+    return false;
+  }
+
+  const newSignature = getExerciseSignature(exercises);
+
+  const existingSignature = getExerciseSignature(
+    existingBlock.reusable_lesson_block_exercises.map((exercise) => ({
+      exerciseId: exercise.exercise_id,
+      variantId: exercise.variant_id,
+    })),
+  );
+
+  return newSignature === existingSignature;
+}
 
 export function LessonBuilder({
   lessonId,
@@ -197,21 +231,107 @@ export function LessonBuilder({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  interface DialogState {
+    title: string;
+    description: string;
+    variant: MessageDialogVariant;
+    confirmLabel: string;
+    showCancel: boolean;
+    onConfirm: () => void | Promise<void>;
+  }
+
+  const [dialog, setDialog] = useState<DialogState | null>(null);
+
+  function closeDialog() {
+    setDialog(null);
+  }
+
+  function showInfoDialog(title: string, description: string) {
+    setDialog({
+      title,
+      description,
+      variant: "warning",
+      confirmLabel: "Ho capito",
+      showCancel: false,
+      onConfirm: closeDialog,
+    });
+  }
+
+  function showConfirmDialog(
+    title: string,
+    description: string,
+    confirmLabel: string,
+    onConfirm: () => void | Promise<void>,
+  ) {
+    setDialog({
+      title,
+      description,
+      variant: "danger",
+      confirmLabel,
+      showCancel: true,
+      onConfirm,
+    });
+  }
+
   const [collapsedItemKeys, setCollapsedItemKeys] = useState<Set<string>>(
     () => new Set(),
   );
 
+  const [collapseStateReady, setCollapseStateReady] = useState(false);
+
+  const collapseStorageKey = `movelib:lesson:${lessonId}:collapsed`;
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(collapseStorageKey);
+
+      if (saved) {
+        const parsed: unknown = JSON.parse(saved);
+
+        if (Array.isArray(parsed)) {
+          setCollapsedItemKeys(
+            new Set(
+              parsed.filter((key): key is string => typeof key === "string"),
+            ),
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Unable to restore collapsed items:", error);
+    } finally {
+      setCollapseStateReady(true);
+    }
+  }, [collapseStorageKey]);
+
   function toggleCollapsed(itemKey: string) {
     setCollapsedItemKeys((current) => {
       const next = new Set(current);
+
       if (next.has(itemKey)) {
         next.delete(itemKey);
       } else {
         next.add(itemKey);
       }
+
       return next;
     });
   }
+
+  useEffect(() => {
+    if (!collapseStateReady) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(
+        collapseStorageKey,
+        JSON.stringify([...collapsedItemKeys]),
+      );
+    } catch (error) {
+      console.error("Unable to save collapsed items:", error);
+    }
+  }, [collapseStorageKey, collapsedItemKeys, collapseStateReady]);
 
   const blocks = useMemo(
     () =>
@@ -284,9 +404,7 @@ export function LessonBuilder({
 
   const filteredExercises = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase("it");
-
     const parsedMinAge = minAge === "" ? 0 : Number(minAge);
-
     const parsedMaxAge = maxAge === "" ? 99 : Number(maxAge);
 
     return exercises.filter((exercise) => {
@@ -326,17 +444,11 @@ export function LessonBuilder({
     });
   }, [
     exercises,
-
     search,
-
     minAge,
-
     maxAge,
-
     selectedTagIds,
-
     showOnlyFavourites,
-
     favouriteExerciseIds,
   ]);
 
@@ -416,18 +528,22 @@ export function LessonBuilder({
       (lessonItem) =>
         lessonItem.type === "block" && lessonItem.key === blockKey,
     );
+
     if (!item || item.type !== "block") {
       return;
     }
-    if (
-      !window.confirm(
-        `Vuoi rimuovere il blocco "${item.block.name}" dalla lezione?`,
-      )
-    ) {
-      return;
-    }
-    setLessonItems((current) =>
-      current.filter((lessonItem) => lessonItem.key !== blockKey),
+
+    showConfirmDialog(
+      "Rimuovere il blocco?",
+      `Vuoi rimuovere il blocco "${item.block.name}" dalla lezione?\n\nIl blocco e gli esercizi al suo interno saranno rimossi dalla lezione al prossimo salvataggio.`,
+      "Rimuovi blocco",
+      () => {
+        setLessonItems((current) =>
+          current.filter((lessonItem) => lessonItem.key !== blockKey),
+        );
+
+        closeDialog();
+      },
     );
   }
 
@@ -769,15 +885,55 @@ export function LessonBuilder({
     }
 
     const supabase = createClient();
+
     const {
       data: { user },
+      error: userError,
     } = await supabase.auth.getUser();
-    if (!user) {
+
+    if (userError || !user) {
       setMessage("Sessione non valida.");
       return;
     }
 
-    const { data: savedBlock, error } = await supabase
+    // Always check the database, not only the blocks loaded
+    // when the page was opened.
+    const { data: existingBlocks, error: lookupError } = await supabase
+      .from("reusable_lesson_blocks")
+      .select(
+        `
+      id,
+      name,
+      reusable_lesson_block_exercises (
+        id,
+        exercise_id,
+        variant_id,
+        position
+      )
+    `,
+      )
+      .eq("user_id", user.id);
+
+    if (lookupError) {
+      setMessage(
+        `Errore durante la verifica dei blocchi: ${lookupError.message}`,
+      );
+      return;
+    }
+
+    const duplicate = (existingBlocks ?? []).find((existingBlock) =>
+      isDuplicateReusableBlock(name, block.exercises, existingBlock),
+    );
+
+    if (duplicate) {
+      showInfoDialog(
+        "Blocco già esistente",
+        `Esiste già un blocco salvato con il nome "${name}" e gli stessi esercizi.\n\nPuoi modificare il nome oppure cambiare gli esercizi prima di salvarlo.`,
+      );
+      return;
+    }
+
+    const { data: savedBlock, error: insertError } = await supabase
       .from("reusable_lesson_blocks")
       .insert({
         user_id: user.id,
@@ -785,8 +941,11 @@ export function LessonBuilder({
       })
       .select("id, name")
       .single();
-    if (error || !savedBlock) {
-      setMessage("Errore durante il salvataggio del blocco.");
+
+    if (insertError || !savedBlock) {
+      setMessage(
+        insertError?.message ?? "Errore durante il salvataggio del blocco.",
+      );
       return;
     }
 
@@ -795,7 +954,6 @@ export function LessonBuilder({
         reusable_lesson_block_id: savedBlock.id,
         exercise_id: exercise.exerciseId,
         variant_id: exercise.variantId,
-
         position,
       }));
 
@@ -804,11 +962,16 @@ export function LessonBuilder({
         .insert(rows);
 
       if (exercisesError) {
-        await supabase
+        const { error: cleanupError } = await supabase
           .from("reusable_lesson_blocks")
           .delete()
           .eq("id", savedBlock.id);
-        setMessage("Errore durante il salvataggio del blocco.");
+
+        setMessage(
+          cleanupError
+            ? `Errore nel salvataggio e nella pulizia: ${cleanupError.message}`
+            : `Errore durante il salvataggio: ${exercisesError.message}`,
+        );
         return;
       }
     }
@@ -858,26 +1021,34 @@ export function LessonBuilder({
     setReusableModalOpen(false);
   }
 
-  async function deleteReusableBlock(block: ReusableLessonBlock) {
-    if (
-      !window.confirm(
-        `Vuoi eliminare il blocco riutilizzabile "${block.name}"? Le copie già presenti nelle lezioni rimarranno invariate.`,
-      )
-    ) {
-      return;
-    }
+  function deleteReusableBlock(block: ReusableLessonBlock) {
+    showConfirmDialog(
+      "Eliminare il blocco salvato?",
+      `Vuoi eliminare il blocco riutilizzabile "${block.name}"?\n\nLe copie già presenti nelle lezioni rimarranno invariate.`,
+      "Elimina blocco",
+      async () => {
+        const supabase = createClient();
 
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("reusable_lesson_blocks")
-      .delete()
-      .eq("id", block.id);
-    if (error) {
-      setMessage("Errore durante l'eliminazione del blocco.");
-      return;
-    }
-    setReusableBlocks((current) =>
-      current.filter((item) => item.id !== block.id),
+        const { error } = await supabase
+          .from("reusable_lesson_blocks")
+          .delete()
+          .eq("id", block.id);
+
+        if (error) {
+          closeDialog();
+          setMessage(
+            `Errore durante l'eliminazione del blocco: ${error.message}`,
+          );
+          return;
+        }
+
+        setReusableBlocks((current) =>
+          current.filter((item) => item.id !== block.id),
+        );
+
+        closeDialog();
+        setMessage(`Blocco "${block.name}" eliminato.`);
+      },
     );
   }
 
@@ -1114,26 +1285,42 @@ export function LessonBuilder({
     }
   }
 
-  async function deleteLesson() {
-    if (!window.confirm(`Vuoi eliminare la lezione "${title}"?`)) {
+  function deleteLesson() {
+    if (isSaving || isDeleting) {
       return;
     }
 
-    setIsDeleting(true);
+    showConfirmDialog(
+      "Eliminare la lezione?",
+      `Vuoi eliminare definitivamente la lezione "${title}"?\n\nQuesta operazione non può essere annullata.`,
+      "Elimina lezione",
+      async () => {
+        setIsDeleting(true);
 
-    const supabase = createClient();
+        try {
+          const supabase = createClient();
 
-    const { error } = await supabase
-      .from("lessons")
-      .delete()
-      .eq("id", lessonId);
-    if (error) {
-      setMessage("Errore durante l'eliminazione della lezione.");
-      setIsDeleting(false);
-      return;
-    }
-    router.push("/protected/lessons");
-    router.refresh();
+          const { error } = await supabase
+            .from("lessons")
+            .delete()
+            .eq("id", lessonId);
+
+          if (error) {
+            closeDialog();
+            setMessage(
+              `Errore durante l'eliminazione della lezione: ${error.message}`,
+            );
+            return;
+          }
+
+          closeDialog();
+          router.push("/protected/lessons");
+          router.refresh();
+        } finally {
+          setIsDeleting(false);
+        }
+      },
+    );
   }
 
   const hasActiveFilters =
@@ -1728,6 +1915,16 @@ export function LessonBuilder({
           </div>
         </div>
       )}
+      <MessageDialog
+        open={dialog !== null}
+        title={dialog?.title ?? ""}
+        description={dialog?.description ?? ""}
+        variant={dialog?.variant ?? "info"}
+        confirmLabel={dialog?.confirmLabel}
+        showCancel={dialog?.showCancel ?? false}
+        onConfirm={dialog?.onConfirm ?? closeDialog}
+        onClose={closeDialog}
+      />
     </div>
   );
 }
