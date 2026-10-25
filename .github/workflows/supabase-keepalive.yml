@@ -10,12 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Query Supabase
+      - name: Ping Supabase database
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           curl --fail-with-body --show-error --silent \
             --max-time 30 \
+            -X POST \
             -H "apikey: $SUPABASE_ANON_KEY" \
-            "$SUPABASE_URL/rest/v1/exercises?select=id&limit=1"
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            "$SUPABASE_URL/rest/v1/rpc/keepalive"
