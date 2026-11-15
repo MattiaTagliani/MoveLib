@@ -1076,184 +1076,58 @@ export function LessonBuilder({
     setIsSaving(true);
     setMessage(null);
 
-    const supabase = createClient();
-
     try {
-      // 1. Read existing blocks before making changes.
-      const { data: savedBlocks, error: readError } = await supabase
-        .from("lesson_blocks")
-        .select("id")
-        .eq("lesson_id", lessonId);
+      const supabase = createClient();
 
-      if (readError) {
-        throw readError;
-      }
-
-      const existingIds = new Set((savedBlocks ?? []).map((block) => block.id));
-
-      // 2. Verify that existing block IDs belong to this lesson.
-      for (const item of currentBlocks) {
-        if (item.block.id && !existingIds.has(item.block.id)) {
-          throw new Error(
-            "Un blocco non appartiene più a questa lezione. Ricarica la pagina.",
-          );
-        }
-      }
-
-      // 3. Create new blocks and update existing ones.
-      // Keep a mapping from React keys to database IDs.
-      const blockIds = new Map<string, string>();
-
-      for (let position = 0; position < lessonItems.length; position++) {
-        const item = lessonItems[position];
-
-        if (item.type !== "block") {
-          continue;
-        }
-
-        const blockName = item.block.name.trim();
-
-        if (item.block.id) {
-          const { data, error } = await supabase
-            .from("lesson_blocks")
-            .update({
-              name: blockName,
-              position,
-            })
-            .eq("id", item.block.id)
-            .eq("lesson_id", lessonId)
-            .select("id")
-            .single();
-
-          if (error || !data) {
-            throw error ?? new Error("Blocco non trovato.");
-          }
-
-          blockIds.set(item.key, data.id);
-        } else {
-          const { data, error } = await supabase
-            .from("lesson_blocks")
-            .insert({
-              lesson_id: lessonId,
-              name: blockName,
-              position,
-            })
-            .select("id")
-            .single();
-
-          if (error || !data) {
-            throw error ?? new Error("Impossibile creare il blocco.");
-          }
-
-          blockIds.set(item.key, data.id);
-        }
-      }
-
-      // 4. Replace exercise associations, but NOT their parent blocks.
-      const { error: deleteExercisesError } = await supabase
-        .from("lesson_exercises")
-        .delete()
-        .eq("lesson_id", lessonId);
-
-      if (deleteExercisesError) {
-        throw deleteExercisesError;
-      }
-
-      const exerciseRows: {
-        lesson_id: string;
-        lesson_block_id: string | null;
-        exercise_id: string;
-        variant_id: string | null;
-        position: number;
-        lesson_position: number | null;
-      }[] = [];
-
-      for (
-        let topLevelPosition = 0;
-        topLevelPosition < lessonItems.length;
-        topLevelPosition++
-      ) {
-        const item = lessonItems[topLevelPosition];
-
+      const payload = lessonItems.map((item) => {
         if (item.type === "exercise") {
-          exerciseRows.push({
-            lesson_id: lessonId,
-            lesson_block_id: null,
-            exercise_id: item.exercise.exerciseId,
-            variant_id: item.exercise.variantId,
-            position: 0,
-            lesson_position: topLevelPosition,
-          });
-
-          continue;
+          return {
+            type: "exercise",
+            key: item.key,
+            exercise: {
+              exerciseId: item.exercise.exerciseId,
+              variantId: item.exercise.variantId,
+            },
+          };
         }
 
-        const blockId = blockIds.get(item.key);
+        return {
+          type: "block",
+          key: item.key,
+          block: {
+            id: item.block.id,
+            name: item.block.name.trim(),
+            exercises: item.block.exercises.map((exercise) => ({
+              exerciseId: exercise.exerciseId,
+              variantId: exercise.variantId,
+            })),
+          },
+        };
+      });
 
-        if (!blockId) {
-          throw new Error("ID del blocco non disponibile.");
-        }
+      const { data, error } = await supabase.rpc("save_lesson_atomic", {
+        p_lesson_id: lessonId,
+        p_title: trimmedTitle,
+        p_items: payload,
+      });
 
-        item.block.exercises.forEach((exercise, position) => {
-          exerciseRows.push({
-            lesson_id: lessonId,
-            lesson_block_id: blockId,
-            exercise_id: exercise.exerciseId,
-            variant_id: exercise.variantId,
-            position,
-            lesson_position: null,
-          });
-        });
+      if (error) {
+        throw error;
       }
 
-      if (exerciseRows.length > 0) {
-        const { error: insertExercisesError } = await supabase
-          .from("lesson_exercises")
-          .insert(exerciseRows);
-
-        if (insertExercisesError) {
-          throw insertExercisesError;
-        }
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
+        throw new Error("Il database ha restituito una risposta non valida.");
       }
 
-      // 5. Delete only blocks that the user removed.
-      const retainedIds = new Set(blockIds.values());
+      const savedBlockIds = data as Record<string, string>;
 
-      const removedIds = [...existingIds].filter((id) => !retainedIds.has(id));
-
-      if (removedIds.length > 0) {
-        const { error: deleteBlocksError } = await supabase
-          .from("lesson_blocks")
-          .delete()
-          .eq("lesson_id", lessonId)
-          .in("id", removedIds);
-
-        if (deleteBlocksError) {
-          throw deleteBlocksError;
-        }
-      }
-
-      // 6. Save the lesson title.
-      const { error: lessonError } = await supabase
-        .from("lessons")
-        .update({
-          title: trimmedTitle,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", lessonId);
-
-      if (lessonError) {
-        throw lessonError;
-      }
-
-      // 7. Store newly assigned block IDs in React state.
       setLessonItems((current) =>
         current.map((item) => {
           if (item.type !== "block") {
             return item;
           }
 
-          const savedId = blockIds.get(item.key);
+          const savedId = savedBlockIds[item.key];
 
           if (!savedId) {
             return item;
@@ -1271,14 +1145,15 @@ export function LessonBuilder({
 
       setTitle(trimmedTitle);
       setMessage("Lezione salvata.");
+
       router.refresh();
     } catch (error) {
       console.error("Lesson saving failed:", error);
 
       setMessage(
         error instanceof Error
-          ? `Errore durante il salvataggio: ${error.message}. Ricarica la lezione prima di riprovare.`
-          : "Errore durante il salvataggio. Ricarica la lezione prima di riprovare.",
+          ? `Errore durante il salvataggio: ${error.message}`
+          : "Errore durante il salvataggio della lezione.",
       );
     } finally {
       setIsSaving(false);
